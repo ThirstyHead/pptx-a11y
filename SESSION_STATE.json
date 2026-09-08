@@ -1,16 +1,16 @@
 {
   "project": "pptx-a11y",
-  "version": "0.2.0",
-  "active_subplan": "v0.2.0-accessibility-assistant-parity",
-  "last_completed_task": "Task 10 (v0.2.0 Complete: Accessibility Assistant Parity, Triage CLI, Human-in-the-Loop Reporting)",
-  "next_task": "Review and release v0.2.0",
+  "version": "0.3.0",
+  "active_subplan": "v0.3.0-cross-platform-gui",
+  "last_completed_task": "Task 10 (v0.3.0 Complete: Cross-Platform GUI, Batch Directory Processing, Trusted Packaging)",
+  "next_task": "Submit PR for v0.3.0",
   "status": "completed",
-  "updated_at": "2026-09-08T14:15:00Z",
+  "updated_at": "2026-09-08T15:30:00Z",
   "test_summary": {
-    "total_tests": 30,
-    "passed": 30,
+    "total_tests": 44,
+    "passed": 44,
     "failed": 0,
-    "coverage_pct": 91
+    "coverage_pct": 90
   },
   "open_blockers": []
 }

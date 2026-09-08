@@ -15,8 +15,9 @@ Part of the document accessibility trio alongside [docx-a11y](https://github.com
 - **Single Source of Truth:** Reports are authored as CommonMark Markdown, then converted into accessible HTML5 and accessible tagged PDF with zero text discrepancies.
 - **SMACSS Theme Engine:** Build-free, text-based CSS theme system with 6 bundled palettes (`light`, `dark`, `ocean`, `forest`, `high-contrast`, `print`). Supports custom user themes in `~/.config/pptx-a11y/themes/`.
 - **Contrast Rigor (WCAG 1.4.3):** Every bundled theme and evaluated slide component enforces a minimum 4.5:1 text contrast ratio (3:1 for large text).
+- **Interactive & Batch GUI:** Native cross-platform desktop interface for bulk directory remediation, file drag-and-drop, real-time progress, and visual triage.
 - **Tagged Accessible PDF:** Exports multi-page PDFs carrying `/Lang`, `/Title`, `/MarkInfo /Marked true`, and validated tag trees.
-- **Deterministic Remediation:** Auto-remediates presentation titles, table header rows, and text run natural language tags.
+- **Deterministic Remediation:** Auto-remediates presentation titles, table header rows, text run natural language tags, and section duplicates.
 
 ---
 
@@ -145,6 +146,27 @@ User themes automatically take precedence over bundled themes with matching name
 | `slide-title-duplicate` | **2.4.2** Page Titled | A | Operable | Slide title duplicated across slides | Manual |
 | `link-text-vague` | **2.4.4** Link Purpose | A | Operable | Non-descriptive anchor text ("click here", "more") | Manual |
 | `language-missing` | **3.1.1** Language of Page | A | Understandable | Text runs lack natural language tags | Yes |
+
+---
+
+## Graphical Desktop Application (GUI)
+
+For content creators, educators, and teams remediating bulk presentations without writing terminal commands:
+
+```bash
+# Launch via CLI flag:
+pptx-a11y --gui
+
+# Or standalone launcher:
+pptx-a11y-gui
+```
+
+### GUI Features:
+- **Bulk Directory Ingestion:** Point to any folder to scan and remediate dozens of decks simultaneously.
+- **Drag and Drop:** Drag `.pptx` presentations or entire directories directly into the window.
+- **Visual Barrier Triage:** Click to resolve missing alt text or slide titles interactively with full context.
+- **Custom Themes & Formats:** Output Markdown, HTML, tagged PDF, and audit JSON in any of the 6 SMACSS themes.
+- **Native Packaging & Trusted Distribution:** See [docs/distribution.md](docs/distribution.md) for macOS Notarization, Windows Authenticode, and Linux AppImage guides.
 
 ---
 
