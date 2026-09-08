@@ -1,7 +1,11 @@
 """Application entry point for pptx-a11y GUI."""
 import sys
 from PySide6.QtWidgets import QApplication
-from .main_window import MainWindow
+
+try:
+    from .main_window import MainWindow
+except ImportError:
+    from pptx_a11y.gui.main_window import MainWindow
 
 
 def create_app(argv=None) -> QApplication:

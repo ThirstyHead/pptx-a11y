@@ -34,7 +34,7 @@ hiddenimports = [
 hiddenimports += collect_submodules("pptx_a11y")
 
 a = Analysis(
-    [str(src_path / "pptx_a11y" / "gui" / "app.py")],
+    [str(project_root / "packaging" / "run_gui.py")],
     pathex=[str(src_path)],
     binaries=[],
     datas=datas,
