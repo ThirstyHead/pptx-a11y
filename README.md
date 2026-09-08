@@ -21,36 +21,65 @@ Part of the document accessibility trio alongside [docx-a11y](https://github.com
 
 ---
 
-## Installation (macOS & Cross-Platform)
+## Installation & Launch (macOS, Windows, Linux)
+
+Running `pptx-a11y` via a Python virtual environment is the **primary, recommended path** for all platforms. It works identically on macOS (Apple Silicon & Intel), Windows, and Linux, providing instant access to both the desktop GUI and the headless CLI without requiring Apple Developer certificates, Windows SmartScreen bypasses, or administrative privileges.
 
 Requires **Python >= 3.10**.
 
-### Recommended: Using `pipx` (Isolated CLI)
+### Primary Path: Python Virtual Environment (`venv`)
+
+#### On macOS & Linux:
 
 ```bash
-# Install directly from local repository or source checkout
-pipx install /Users/scott/code/local/pptx-a11y
+# 1. Clone and enter the repository
+git clone https://github.com/ThirstyHead/pptx-a11y.git
+cd pptx-a11y
 
-# Or editable install for active development:
-pipx install --editable /Users/scott/code/local/pptx-a11y
-```
-
-### Using Python Virtual Environment (`venv`)
-
-```bash
-# 1. Clone or navigate to the repository
-cd /Users/scott/code/local/pptx-a11y
-
-# 2. Create virtual environment
+# 2. Create and activate a virtual environment
 python3 -m venv .venv
 source .venv/bin/activate
 
-# 3. Install in editable mode with development dependencies
-pip install -e ".[dev]"
+# 3. Install the application with GUI support
+# Note: Always include quotes around ".[gui]" to prevent zsh/bash globbing
+pip install -e ".[gui]"
+
+# 4. Launch the Desktop GUI
+pptx-a11y-gui
 ```
 
-Verify installation:
+#### On Windows (PowerShell):
+
+```powershell
+# 1. Clone and enter the repository
+git clone https://github.com/ThirstyHead/pptx-a11y.git
+cd pptx-a11y
+
+# 2. Create and activate a virtual environment
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+
+# 3. Install the application with GUI support
+pip install -e ".[gui]"
+
+# 4. Launch the Desktop GUI
+pptx-a11y-gui
+```
+
+> **Important Installation Tips:**
+> - **Execute from the repository root:** Ensure your working directory is `pptx-a11y/` where `pyproject.toml` lives. Running `pip install -e .` from subdirectories (like `examples/`) will report that no project file was found.
+> - **Quote the extras string (`".[gui]"`):** In macOS `zsh`, unquoted brackets `pptx-a11y[gui]` or `.[gui]` are interpreted as wildcard patterns, causing `zsh: no matches found`. Always wrap the target in double quotes (`".[gui]"`).
+> - **Install from local source (`.`):** Because `pptx-a11y` is actively built from source, use `pip install -e ".[gui]"` (which points to the local checkout `.`) rather than `pip install pptx-a11y[gui]` (which queries the remote PyPI index).
+> - **Developer & Test Suite:** To install development, linting, and automated test dependencies alongside the GUI, use `pip install -e ".[all]"`.
+
+---
+
+### Alternative: CLI-Only via `pipx`
+
+For isolated headless server use or CI/CD pipelines without GUI dependencies:
+
 ```bash
+pipx install .
 pptx-a11y --help
 ```
 

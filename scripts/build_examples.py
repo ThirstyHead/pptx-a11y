@@ -10,8 +10,9 @@ from pptx.util import Inches, Pt
 from pptx_a11y.audit import audit_file
 from pptx_a11y.rules import RULES
 
-EXAMPLES_DIR = Path(__file__).parent
-IMAGE_PATH = EXAMPLES_DIR / "bread.jpg"
+EXAMPLES_DIR = Path(__file__).parent.parent / "examples"
+ASSETS_DIR = Path(__file__).parent / "assets"
+IMAGE_PATH = ASSETS_DIR / "bread.jpg"
 
 
 def set_run_lang(run, lang="en-US"):

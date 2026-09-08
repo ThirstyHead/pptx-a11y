@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional
 from pptx import Presentation
 from .findings import Finding, findings_sorted, summarize
 from .rules import RULES, AuditContext
+from . import __version__
 
 
 def is_encrypted_package(path: Path) -> bool:
@@ -53,7 +54,7 @@ def audit_file(path: str | Path, ctx: Optional[AuditContext] = None) -> Dict[str
             "file": p.name,
             "sha256": file_sha256,
             "audited_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-            "tool": "pptx-a11y/0.3.0",
+            "tool": f"pptx-a11y/{__version__}",
             "findings": [finding.to_dict()],
             "summary": summarize(sorted_f),
         }
@@ -81,7 +82,7 @@ def audit_file(path: str | Path, ctx: Optional[AuditContext] = None) -> Dict[str
         "file": p.name,
         "sha256": file_sha256,
         "audited_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "tool": "pptx-a11y/0.3.0",
+        "tool": f"pptx-a11y/{__version__}",
         "findings": [f.to_dict() for f in sorted_f],
         "summary": summarize(sorted_f),
     }
