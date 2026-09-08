@@ -1,0 +1,52 @@
+"""End-to-end integration test exercising the full CLI across all report formats."""
+import subprocess
+import sys
+from pathlib import Path
+import pytest
+from pptx_a11y.cli import main
+
+FIXTURES = Path(__file__).parent / "fixtures"
+
+
+def test_cli_subprocess_multi_format(tmp_path: Path):
+    cmd = [
+        sys.executable,
+        "-m",
+        "pptx_a11y.cli",
+        str(FIXTURES / "clean.pptx"),
+        "--format",
+        "md,html,pdf,json",
+        "--output-dir",
+        str(tmp_path),
+    ]
+    res = subprocess.run(cmd, capture_output=True, text=True)
+    assert res.returncode == 0, f"CLI failed: {res.stderr}"
+
+    assert (tmp_path / "clean-a11y-report.md").exists()
+    assert (tmp_path / "clean-a11y-report.html").exists()
+    assert (tmp_path / "clean-a11y-report.pdf").exists()
+    assert (tmp_path / "clean-audit.json").exists()
+
+
+def test_cli_direct_invocation(tmp_path: Path, monkeypatch):
+    args = [
+        "pptx-a11y",
+        str(FIXTURES / "violations.pptx"),
+        "--fix",
+        "--format",
+        "md,html,pdf,json",
+        "--output-dir",
+        str(tmp_path),
+    ]
+    monkeypatch.setattr(sys, "argv", args)
+    with pytest.raises(SystemExit) as excinfo:
+        main()
+    assert excinfo.value.code == 1
+
+    assert (tmp_path / "violations-remediated.pptx").exists()
+    assert (tmp_path / "violations-a11y-report.md").exists()
+    assert (tmp_path / "violations-a11y-report.html").exists()
+    assert (tmp_path / "violations-a11y-report.pdf").exists()
+
+    md_content = (tmp_path / "violations-a11y-report.md").read_text(encoding="utf-8")
+    assert "Remediation Progress" in md_content
