@@ -28,25 +28,30 @@ Requires **Python >= 3.10**.
 ### Recommended: Using `pipx` (Isolated CLI)
 
 ```bash
-# Install directly from local repository or source checkout
-pipx install /Users/scott/code/local/pptx-a11y
+# Install directly from local repository or source checkout:
+pipx install .
 
 # Or editable install for active development:
-pipx install --editable /Users/scott/code/local/pptx-a11y
+pipx install --editable .
 ```
 
 ### Using Python Virtual Environment (`venv`)
 
 ```bash
-# 1. Clone or navigate to the repository
-cd /Users/scott/code/local/pptx-a11y
+# 1. Clone and navigate to the repository
+git clone https://github.com/ThirstyHead/pptx-a11y.git
+cd pptx-a11y
 
 # 2. Create virtual environment
 python3 -m venv .venv
 source .venv/bin/activate
 
-# 3. Install in editable mode with development dependencies
-pip install -e ".[dev]"
+# 3. Install in editable mode with GUI and dev dependencies
+# Note: Always quote extras in zsh/macOS (e.g. ".[gui]" or ".[dev]") to avoid globbing errors
+pip install -e ".[gui]"
+
+# Or install everything (tests, development tools, GUI):
+pip install -e ".[all]"
 ```
 
 Verify installation:
