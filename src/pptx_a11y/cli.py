@@ -16,7 +16,8 @@ def main():
         prog="pptx-a11y",
         description="Audit and remediate PowerPoint presentations against WCAG 2.2 AA standards.",
     )
-    parser.add_argument("file", help="Path to PowerPoint .pptx file")
+    parser.add_argument("file", nargs="?", default=None, help="Path to PowerPoint .pptx file")
+    parser.add_argument("--gui", action="store_true", help="Launch graphical user interface")
     parser.add_argument(
         "--format",
         default="md",
@@ -33,6 +34,19 @@ def main():
     parser.add_argument("--out-pptx", help="Output path for remediated .pptx file")
 
     args = parser.parse_args()
+
+    if args.gui:
+        try:
+            from .gui.app import main as gui_main
+            gui_main()
+            sys.exit(0)
+        except ImportError as e:
+            print(f"Error: GUI dependencies not installed. Run 'pip install pptx-a11y[gui]'. ({e})", file=sys.stderr)
+            sys.exit(1)
+
+    if not args.file:
+        parser.error("the following arguments are required: file (or specify --gui)")
+
     input_path = Path(args.file)
     if not input_path.exists():
         print(f"Error: File '{input_path}' not found.", file=sys.stderr)
