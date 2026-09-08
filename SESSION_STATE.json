@@ -1,9 +1,9 @@
 {
   "project": "pptx-a11y",
-  "active_subplan": "subplan-1-audit-engine",
-  "last_completed_task": "Subplan 0 Complete (Scaffold, Findings, Fixtures)",
-  "next_task": "Task 1.1: Base Rule and AuditContext",
-  "status": "ready-for-subplan-1",
-  "updated_at": "2026-09-08T11:45:00Z",
+  "active_subplan": "subplan-2-markdown-report",
+  "last_completed_task": "Subplan 1 Complete (PresentationML POUR Audit Engine)",
+  "next_task": "Task 2.1: Canonical W3C Knowledge Base & Link Map",
+  "status": "ready-for-subplan-2",
+  "updated_at": "2026-09-08T12:15:00Z",
   "open_blockers": []
 }

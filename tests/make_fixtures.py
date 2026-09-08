@@ -28,6 +28,16 @@ def make_clean_deck(path: Path):
     if slide2.shapes.title:
         slide2.shapes.title.text = "Financial Highlights"
 
+    # Tag all text runs with language
+    for slide in prs.slides:
+        for shape in slide.shapes:
+            tf = getattr(shape, "text_frame", None)
+            if tf:
+                for p in tf.paragraphs:
+                    for r in p.runs:
+                        rPr = r._r.get_or_add_rPr()
+                        rPr.set("lang", "en-US")
+
     # Add a clean table
     rows, cols = 3, 2
     table_shape = slide2.shapes.add_table(rows, cols, Inches(1), Inches(2), Inches(6), Inches(2))
