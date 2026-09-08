@@ -3,6 +3,7 @@ from pathlib import Path
 from lxml import etree
 from pptx import Presentation
 from pptx.chart.data import CategoryChartData
+from pptx.dml.color import RGBColor
 from pptx.enum.chart import XL_CHART_TYPE
 from pptx.enum.shapes import MSO_SHAPE
 from pptx.util import Inches, Pt
@@ -17,6 +18,25 @@ def set_run_lang(run, lang="en-US"):
     """Ensure run has an a:rPr element with lang attribute."""
     rPr = run._r.get_or_add_rPr()
     rPr.set("lang", lang)
+
+
+def format_run(run, font_size_pt=15, bold=False, color_rgb=(0x0F, 0x17, 0x2A), lang="en-US"):
+    """Format run typography: language, size, weight, and WCAG-compliant color."""
+    set_run_lang(run, lang=lang)
+    run.font.size = Pt(font_size_pt)
+    run.font.bold = bold
+    run.font.name = "Calibri"
+    run.font.color.rgb = RGBColor(*color_rgb)
+
+
+def remove_bullets(paragraph):
+    """Ensure paragraph renders as clean body prose without bullet symbols."""
+    pPr = paragraph._p.get_or_add_pPr()
+    for child in list(pPr):
+        if child.tag.endswith(("buClr", "buSzPct", "buSzPts", "buFont", "buChar", "buAutoNum", "buBlip")):
+            pPr.remove(child)
+    if pPr.find("{http://schemas.openxmlformats.org/drawingml/2006/main}buNone") is None:
+        etree.SubElement(pPr, "{http://schemas.openxmlformats.org/drawingml/2006/main}buNone")
 
 
 def add_accessible_sections(prs: Presentation):
@@ -56,11 +76,11 @@ def build_accessible_deck(output_path: Path):
     slide1 = prs.slides.add_slide(prs.slide_layouts[0])
     title1 = slide1.shapes.title
     title1.text = "No Knead Bread"
-    set_run_lang(title1.text_frame.paragraphs[0].runs[0])
+    format_run(title1.text_frame.paragraphs[0].runs[0], font_size_pt=40, bold=True, color_rgb=(0x0F, 0x17, 0x2A))
 
     sub1 = slide1.placeholders[1]
     sub1.text = "No kneading required, 4 simple ingredients, baked in a Dutch Oven."
-    set_run_lang(sub1.text_frame.paragraphs[0].runs[0])
+    format_run(sub1.text_frame.paragraphs[0].runs[0], font_size_pt=18, bold=False, color_rgb=(0x47, 0x55, 0x69))
 
     # -------------------------------------------------------------
     # Slide 2: Introduction & Overview (Two-column layout)
@@ -68,7 +88,7 @@ def build_accessible_deck(output_path: Path):
     slide2 = prs.slides.add_slide(prs.slide_layouts[3])
     title2 = slide2.shapes.title
     title2.text = "Introduction & Overview"
-    set_run_lang(title2.text_frame.paragraphs[0].runs[0])
+    format_run(title2.text_frame.paragraphs[0].runs[0], font_size_pt=30, bold=True, color_rgb=(0x0F, 0x17, 0x2A))
 
     # Left content placeholder for text
     body2 = slide2.placeholders[1]
@@ -77,34 +97,42 @@ def build_accessible_deck(output_path: Path):
     body2.width = Inches(4.5)
     body2.height = Inches(4.8)
 
-    body2.text = (
-        "The simplicity of this no knead bread is what makes it a household favorite. "
+    p1 = body2.text_frame.paragraphs[0]
+    p1.text = (
+        "The simplicity of this no-knead bread is what makes it a household favorite. "
         "Your entire home will fill with the aroma of fresh artisan bakery bread as it bakes."
     )
-    set_run_lang(body2.text_frame.paragraphs[0].runs[0])
+    p1.space_before = Pt(0)
+    p1.space_after = Pt(12)
+    remove_bullets(p1)
+    format_run(p1.runs[0], font_size_pt=15, color_rgb=(0x33, 0x41, 0x55))
 
     p2 = body2.text_frame.add_paragraph()
     p2.text = (
         "Requiring zero special equipment and just four basic pantry staples, "
         "this method delivers a golden, blistered crust and a moist, airy crumb."
     )
-    p2.space_before = Pt(14)
-    set_run_lang(p2.runs[0])
+    p2.space_before = Pt(0)
+    p2.space_after = Pt(12)
+    remove_bullets(p2)
+    format_run(p2.runs[0], font_size_pt=15, color_rgb=(0x33, 0x41, 0x55))
 
     p3 = body2.text_frame.add_paragraph()
     p3.text = (
         "A slow, 12 to 18-hour room-temperature fermentation develops rich flavor "
         "and a chewy artisan texture without any manual kneading."
     )
-    p3.space_before = Pt(14)
-    set_run_lang(p3.runs[0])
+    p3.space_before = Pt(0)
+    p3.space_after = Pt(0)
+    remove_bullets(p3)
+    format_run(p3.runs[0], font_size_pt=15, color_rgb=(0x33, 0x41, 0x55))
 
     # Remove unused right placeholder from DOM
     slide2.shapes._spTree.remove(slide2.placeholders[2]._element)
 
     # Add bread photo cleanly on the right side
     left = Inches(5.5)
-    top = Inches(2.0)
+    top = Inches(1.8)
     pic = slide2.shapes.add_picture(str(IMAGE_PATH), left, top, width=Inches(3.8))
     pic.name = "Artisan Bread Loaf"
     cNvPr = pic._element.xpath(".//p:cNvPr")[0]
@@ -119,16 +147,16 @@ def build_accessible_deck(output_path: Path):
     slide3 = prs.slides.add_slide(prs.slide_layouts[1])
     title3 = slide3.shapes.title
     title3.text = "Ingredients"
-    set_run_lang(title3.text_frame.paragraphs[0].runs[0])
+    format_run(title3.text_frame.paragraphs[0].runs[0], font_size_pt=30, bold=True, color_rgb=(0x0F, 0x17, 0x2A))
 
     # Hide default content placeholder and add accessible table
     slide3.shapes._spTree.remove(slide3.placeholders[1]._element)
 
     rows, cols = 5, 3
     left = Inches(1.0)
-    top = Inches(2.0)
+    top = Inches(1.8)
     width = Inches(8.0)
-    height = Inches(3.5)
+    height = Inches(3.2)
     tbl_shape = slide3.shapes.add_table(rows, cols, left, top, width, height)
     tbl_shape.name = "Ingredients Table"
     table = tbl_shape.table
@@ -148,13 +176,13 @@ def build_accessible_deck(output_path: Path):
     for col_idx, h_text in enumerate(headers):
         cell = table.cell(0, col_idx)
         cell.text = h_text
-        set_run_lang(cell.text_frame.paragraphs[0].runs[0])
+        format_run(cell.text_frame.paragraphs[0].runs[0], font_size_pt=15, bold=True, color_rgb=(0x0F, 0x17, 0x2A))
 
     for row_idx, row_data in enumerate(data, start=1):
         for col_idx, val in enumerate(row_data):
             cell = table.cell(row_idx, col_idx)
             cell.text = val
-            set_run_lang(cell.text_frame.paragraphs[0].runs[0])
+            format_run(cell.text_frame.paragraphs[0].runs[0], font_size_pt=14, bold=False, color_rgb=(0x33, 0x41, 0x55))
 
     # -------------------------------------------------------------
     # Slide 4: Instructions
@@ -162,9 +190,11 @@ def build_accessible_deck(output_path: Path):
     slide4 = prs.slides.add_slide(prs.slide_layouts[1])
     title4 = slide4.shapes.title
     title4.text = "Step-by-Step Instructions"
-    set_run_lang(title4.text_frame.paragraphs[0].runs[0])
+    format_run(title4.text_frame.paragraphs[0].runs[0], font_size_pt=30, bold=True, color_rgb=(0x0F, 0x17, 0x2A))
 
     body4 = slide4.placeholders[1]
+    body4.top = Inches(1.8)
+    body4.height = Inches(5.0)
     steps = [
         "1. In a large bowl, whisk together flour, salt, and yeast.",
         "2. Add room-temperature water; stir with a wooden spoon until a shaggy dough forms.",
@@ -173,12 +203,20 @@ def build_accessible_deck(output_path: Path):
         "5. Gently turn dough onto a floured surface, shape into a ball, and transfer to hot pot.",
         "6. Bake covered for 30 minutes, then uncovered for 15 to 20 minutes until golden brown.",
     ]
-    body4.text = steps[0]
-    set_run_lang(body4.text_frame.paragraphs[0].runs[0])
+    p0 = body4.text_frame.paragraphs[0]
+    p0.text = steps[0]
+    p0.space_before = Pt(0)
+    p0.space_after = Pt(6)
+    remove_bullets(p0)
+    format_run(p0.runs[0], font_size_pt=14, color_rgb=(0x33, 0x41, 0x55))
+
     for s in steps[1:]:
         p = body4.text_frame.add_paragraph()
         p.text = s
-        set_run_lang(p.runs[0])
+        p.space_before = Pt(0)
+        p.space_after = Pt(6)
+        remove_bullets(p)
+        format_run(p.runs[0], font_size_pt=14, color_rgb=(0x33, 0x41, 0x55))
 
     # -------------------------------------------------------------
     # Slide 5: Serving & Storage Tips
@@ -186,27 +224,47 @@ def build_accessible_deck(output_path: Path):
     slide5 = prs.slides.add_slide(prs.slide_layouts[1])
     title5 = slide5.shapes.title
     title5.text = "Serving & Storage Tips"
-    set_run_lang(title5.text_frame.paragraphs[0].runs[0])
+    format_run(title5.text_frame.paragraphs[0].runs[0], font_size_pt=30, bold=True, color_rgb=(0x0F, 0x17, 0x2A))
 
     body5 = slide5.placeholders[1]
+    body5.top = Inches(1.8)
+    body5.height = Inches(4.8)
     tips = [
-        "Cool Completely: Allow loaf to rest on a wire cooling rack for at least 1 hour before slicing to prevent gumminess.",
-        "Storage: Store at room temperature in a paper bag or bread box for up to 3 days. Avoid plastic bags.",
-        "Serving: Perfect warm with salted European butter, extra virgin olive oil, or hearty soups.",
+        ("Cool Completely: ", "Allow loaf to rest on a wire cooling rack for at least 1 hour before slicing to prevent gumminess."),
+        ("Storage: ", "Store at room temperature in a paper bag or bread box for up to 3 days. Avoid plastic bags."),
+        ("Serving: ", "Perfect warm with salted European butter, extra virgin olive oil, or hearty soups."),
     ]
-    body5.text = tips[0]
-    set_run_lang(body5.text_frame.paragraphs[0].runs[0])
-    for t in tips[1:]:
+    p0 = body5.text_frame.paragraphs[0]
+    p0.space_before = Pt(0)
+    p0.space_after = Pt(10)
+    remove_bullets(p0)
+    r_lead = p0.runs[0] if p0.runs else p0.add_run()
+    r_lead.text = tips[0][0]
+    format_run(r_lead, font_size_pt=15, bold=True, color_rgb=(0x0F, 0x17, 0x2A))
+    r_body = p0.add_run()
+    r_body.text = tips[0][1]
+    format_run(r_body, font_size_pt=15, bold=False, color_rgb=(0x33, 0x41, 0x55))
+
+    for lead, text in tips[1:]:
         p = body5.text_frame.add_paragraph()
-        p.text = t
-        set_run_lang(p.runs[0])
+        p.space_before = Pt(0)
+        p.space_after = Pt(10)
+        remove_bullets(p)
+        r_l = p.add_run()
+        r_l.text = lead
+        format_run(r_l, font_size_pt=15, bold=True, color_rgb=(0x0F, 0x17, 0x2A))
+        r_b = p.add_run()
+        r_b.text = text
+        format_run(r_b, font_size_pt=15, bold=False, color_rgb=(0x33, 0x41, 0x55))
 
     # Add accessible link with descriptive text
     p_link = body5.text_frame.add_paragraph()
+    p_link.space_before = Pt(8)
+    remove_bullets(p_link)
     r_link = p_link.add_run()
     r_link.text = "Explore the complete Artisan Dutch Oven Baking Guide"
     r_link.hyperlink.address = "https://example.com/artisan-bread-guide"
-    set_run_lang(r_link)
+    format_run(r_link, font_size_pt=15, bold=True, color_rgb=(0x02, 0x84, 0xC7))
 
     prs.save(str(output_path))
     print(f"Saved accessible presentation to: {output_path}")
