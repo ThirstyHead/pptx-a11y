@@ -382,7 +382,7 @@ def build_test_deck(output_path: Path):
     prs.core_properties.title = ""
 
     # Barrier 2: document-restricted-access (MS Accessibility: Restricted access)
-    # Valid hash for password "password" with spinCount="100000" and SHA-512
+    # Valid hash for password "password" with spinCount="100000" and SHA-512 (MS-OFFCRYPTO 2.3.7.1)
     p_ns = "http://schemas.openxmlformats.org/presentationml/2006/main"
     mv = etree.SubElement(prs._element, f"{{{p_ns}}}modifyVerifier")
     mv.set("cryptProviderType", "rsaAES")
@@ -391,10 +391,7 @@ def build_test_deck(output_path: Path):
     mv.set("cryptAlgorithmSid", "14")
     mv.set("spinCount", "100000")
     mv.set("saltData", "cHB0X2ExMXlfc2FsdF8xNg==")
-    mv.set("hashData", "42Yp84F7syWXBhJbl2Rr6Oy/6gv0cH6Sujvs5N7jNiex5gg1mLWzl4Y4NaYWFcw+wboxldR0NdRpMqnIzQFy5Q==")
-    mv.set("algorithmName", "SHA-512")
-    mv.set("saltValue", "cHB0X2ExMXlfc2FsdF8xNg==")
-    mv.set("hashValue", "42Yp84F7syWXBhJbl2Rr6Oy/6gv0cH6Sujvs5N7jNiex5gg1mLWzl4Y4NaYWFcw+wboxldR0NdRpMqnIzQFy5Q==")
+    mv.set("hashData", "ESlCd9vmaTG97j2t10XTqsRqbMixHIh7TaS7p2eOLBsKmLfcZBhIhGwLHVLyTh2bpTp1h2HocF4jitvteiBXJw==")
 
     # Barrier 3: section-name-default & section-name-duplicate (MS Accessibility: Default/Duplicate section name)
     extLst = etree.SubElement(
