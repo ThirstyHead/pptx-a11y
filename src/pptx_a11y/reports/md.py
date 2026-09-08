@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Optional
 from .meta import PRINCIPLES, POUR_INTROS, SC_META, W3C_QUICKREF
 from .stats import compute_progress_stats
 from .tone import RULE_BARRIER_EXPLANATIONS, WHO_MAP, assert_social_model_language
+from .. import __version__
 
 
 def render_md(
@@ -24,7 +25,7 @@ def render_md(
     lines.append("- **Integrity Verification:** Immutable (original presentation is strictly read-only and never modified in place)")
     lines.append(f"- **Audit Standard:** [WCAG 2.2 Levels A & AA]({W3C_QUICKREF})")
     lines.append(f"- **Evaluated At:** {result.get('audited_at', 'n/a')}")
-    lines.append(f"- **Audit Tool:** `{result.get('tool', 'pptx-a11y/0.3.0')}`")
+    lines.append(f"- **Audit Tool:** `{result.get('tool', f'pptx-a11y/{__version__}')}`")
     lines.append(f"- **Compliance Status:** **{stats['compliance_verdict']}**")
     lines.append("")
 
