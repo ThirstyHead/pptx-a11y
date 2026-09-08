@@ -39,6 +39,31 @@ def remove_bullets(paragraph):
         etree.SubElement(pPr, "{http://schemas.openxmlformats.org/drawingml/2006/main}buNone")
 
 
+def set_numbered_list(paragraph, start_at: int | None = None):
+    """Configure paragraph as an accessible OpenXML auto-numbered list item."""
+    pPr = paragraph._p.get_or_add_pPr()
+    for child in list(pPr):
+        if child.tag.endswith(("buClr", "buSzPct", "buSzPts", "buFont", "buChar", "buAutoNum", "buBlip", "buNone")):
+            pPr.remove(child)
+    attrib = {"type": "arabicPeriod"}
+    if start_at is not None:
+        attrib["startAt"] = str(start_at)
+    etree.SubElement(pPr, "{http://schemas.openxmlformats.org/drawingml/2006/main}buAutoNum", attrib=attrib)
+    pPr.set("marL", "342900")
+    pPr.set("indent", "-342900")
+
+
+def set_bullet_list(paragraph, char: str = "•"):
+    """Configure paragraph as an accessible OpenXML bulleted list item."""
+    pPr = paragraph._p.get_or_add_pPr()
+    for child in list(pPr):
+        if child.tag.endswith(("buClr", "buSzPct", "buSzPts", "buFont", "buChar", "buAutoNum", "buBlip", "buNone")):
+            pPr.remove(child)
+    etree.SubElement(pPr, "{http://schemas.openxmlformats.org/drawingml/2006/main}buChar", attrib={"char": char})
+    pPr.set("marL", "342900")
+    pPr.set("indent", "-342900")
+
+
 def style_card_placeholder(shape, fill_hex="F8FAFC", border_hex="CBD5E1"):
     """Style placeholder shape with a modern card container appearance."""
     shape.fill.solid()
@@ -218,185 +243,132 @@ def build_accessible_deck(output_path: Path):
             format_run(cell.text_frame.paragraphs[0].runs[0], font_size_pt=13.5, bold=False, color_rgb=(0x33, 0x41, 0x55))
 
     # -------------------------------------------------------------
-    # Slide 4: Instructions (Two-Card Process Layout)
+    # Slide 4: Instructions (Exemplary Accessible Numbered List)
     # -------------------------------------------------------------
-    slide4 = prs.slides.add_slide(prs.slide_layouts[3])
+    slide4 = prs.slides.add_slide(prs.slide_layouts[1])
     title4 = slide4.shapes.title
     title4.text = "Step-by-Step Instructions"
     format_run(title4.text_frame.paragraphs[0].runs[0], font_size_pt=30, bold=True, color_rgb=(0x0F, 0x17, 0x2A))
 
-    # Phase 1 Card (Left Placeholder)
-    col1 = slide4.placeholders[1]
-    col1.left = Inches(0.8)
-    col1.top = Inches(1.6)
-    col1.width = Inches(4.0)
-    col1.height = Inches(5.2)
-    style_card_placeholder(col1)
+    body4 = slide4.placeholders[1]
+    body4.left = Inches(0.8)
+    body4.top = Inches(1.6)
+    body4.width = Inches(8.4)
+    body4.height = Inches(5.2)
+    style_card_placeholder(body4)
 
-    p_h1 = col1.text_frame.paragraphs[0]
-    p_h1.text = "PHASE 1: PREPARATION & FERMENT"
-    p_h1.space_before = Pt(0)
-    p_h1.space_after = Pt(12)
-    remove_bullets(p_h1)
-    format_run(p_h1.runs[0], font_size_pt=11, bold=True, color_rgb=(0x03, 0x69, 0xA1))
-
-    phase1_steps = [
-        ("01  Whisk Dry Ingredients", "In a large mixing bowl, whisk together 3 cups all-purpose flour, 1¾ tsp salt, and ½ tsp active dry yeast."),
-        ("02  Form Shaggy Dough", "Pour in 1½ cups room-temperature water. Mix with a spatula or wooden spoon until thoroughly incorporated."),
-        ("03  Overnight Counter Rest", "Cover bowl tightly with plastic wrap. Let rest at room temperature for 12 to 18 hours until bubbly and doubled."),
+    steps = [
+        (
+            "Whisk Dry Ingredients — ",
+            "In a large bowl, whisk together 3 cups all-purpose flour, 1¾ tsp fine salt, and ½ tsp active dry yeast.",
+        ),
+        (
+            "Form Shaggy Dough — ",
+            "Pour in 1½ cups room-temperature water. Mix with a wooden spoon or spatula until thoroughly incorporated.",
+        ),
+        (
+            "Overnight Counter Ferment — ",
+            "Cover bowl tightly with plastic wrap. Let rest at room temperature for 12 to 18 hours until bubbly and doubled.",
+        ),
+        (
+            "Preheat Oven & Dutch Oven — ",
+            "Place covered cast iron Dutch oven inside oven. Preheat both together to 450°F (230°C) for at least 30 minutes.",
+        ),
+        (
+            "Shape & Transfer Dough — ",
+            "With generously floured hands, turn dough onto a floured counter, shape into a ball, and drop into hot pot.",
+        ),
+        (
+            "Covered & Uncovered Bake — ",
+            "Bake covered 30 minutes to trap steam. Remove lid and bake 15 to 20 minutes more until crust is deeply golden.",
+        ),
     ]
-    for step_num, (stitle, desc) in enumerate(phase1_steps):
-        p_t = col1.text_frame.add_paragraph()
-        p_t.text = stitle
-        p_t.space_before = Pt(0)
-        p_t.space_after = Pt(2)
-        remove_bullets(p_t)
-        format_run(p_t.runs[0], font_size_pt=13.5, bold=True, color_rgb=(0x0F, 0x17, 0x2A))
 
-        p_d = col1.text_frame.add_paragraph()
-        p_d.text = desc
-        p_d.space_before = Pt(0)
-        p_d.space_after = Pt(10 if step_num < 2 else 0)
-        remove_bullets(p_d)
-        format_run(p_d.runs[0], font_size_pt=12, bold=False, color_rgb=(0x33, 0x41, 0x55))
+    p0 = body4.text_frame.paragraphs[0]
+    p0.space_before = Pt(0)
+    p0.space_after = Pt(10)
+    set_numbered_list(p0)
+    r_lead = p0.runs[0] if p0.runs else p0.add_run()
+    r_lead.text = steps[0][0]
+    format_run(r_lead, font_size_pt=13.5, bold=True, color_rgb=(0x0F, 0x17, 0x2A))
+    r_body = p0.add_run()
+    r_body.text = steps[0][1]
+    format_run(r_body, font_size_pt=13.0, bold=False, color_rgb=(0x33, 0x41, 0x55))
 
-    # Phase 2 Card (Right Placeholder)
-    col2 = slide4.placeholders[2]
-    col2.left = Inches(5.2)
-    col2.top = Inches(1.6)
-    col2.width = Inches(4.0)
-    col2.height = Inches(5.2)
-    style_card_placeholder(col2)
-
-    p_h2 = col2.text_frame.paragraphs[0]
-    p_h2.text = "PHASE 2: PREHEAT & BAKE"
-    p_h2.space_before = Pt(0)
-    p_h2.space_after = Pt(12)
-    remove_bullets(p_h2)
-    format_run(p_h2.runs[0], font_size_pt=11, bold=True, color_rgb=(0x03, 0x69, 0xA1))
-
-    phase2_steps = [
-        ("04  Preheat Oven & Dutch Oven", "Place covered cast iron Dutch oven inside oven. Preheat both together to 450°F (230°C) for at least 30 minutes."),
-        ("05  Shape & Transfer Dough", "With floured hands, gently turn dough onto a floured counter, shape into a ball, and drop into hot pot."),
-        ("06  Covered & Uncovered Bake", "Bake covered 30 minutes to trap steam. Remove lid and bake 15–20 minutes more until crust is deeply golden."),
-    ]
-    for step_num, (stitle, desc) in enumerate(phase2_steps):
-        p_t = col2.text_frame.add_paragraph()
-        p_t.text = stitle
-        p_t.space_before = Pt(0)
-        p_t.space_after = Pt(2)
-        remove_bullets(p_t)
-        format_run(p_t.runs[0], font_size_pt=13.5, bold=True, color_rgb=(0x0F, 0x17, 0x2A))
-
-        p_d = col2.text_frame.add_paragraph()
-        p_d.text = desc
-        p_d.space_before = Pt(0)
-        p_d.space_after = Pt(10 if step_num < 2 else 0)
-        remove_bullets(p_d)
-        format_run(p_d.runs[0], font_size_pt=12, bold=False, color_rgb=(0x33, 0x41, 0x55))
+    for step_title, step_desc in steps[1:]:
+        p = body4.text_frame.add_paragraph()
+        p.space_before = Pt(0)
+        p.space_after = Pt(10)
+        set_numbered_list(p)
+        r_l = p.add_run()
+        r_l.text = step_title
+        format_run(r_l, font_size_pt=13.5, bold=True, color_rgb=(0x0F, 0x17, 0x2A))
+        r_d = p.add_run()
+        r_d.text = step_desc
+        format_run(r_d, font_size_pt=13.0, bold=False, color_rgb=(0x33, 0x41, 0x55))
 
     # -------------------------------------------------------------
-    # Slide 5: Serving & Storage Tips (Two-Card Protocol Layout)
+    # Slide 5: Serving & Storage Tips (Exemplary Accessible Bullet List)
     # -------------------------------------------------------------
-    slide5 = prs.slides.add_slide(prs.slide_layouts[3])
+    slide5 = prs.slides.add_slide(prs.slide_layouts[1])
     title5 = slide5.shapes.title
     title5.text = "Serving & Storage Tips"
     format_run(title5.text_frame.paragraphs[0].runs[0], font_size_pt=30, bold=True, color_rgb=(0x0F, 0x17, 0x2A))
 
-    # Left Card: Storage & Handling
-    c1 = slide5.placeholders[1]
-    c1.left = Inches(0.8)
-    c1.top = Inches(1.6)
-    c1.width = Inches(4.0)
-    c1.height = Inches(5.2)
-    style_card_placeholder(c1)
+    body5 = slide5.placeholders[1]
+    body5.left = Inches(0.8)
+    body5.top = Inches(1.6)
+    body5.width = Inches(8.4)
+    body5.height = Inches(5.2)
+    style_card_placeholder(body5)
 
-    p_badge1 = c1.text_frame.paragraphs[0]
-    p_badge1.text = "HANDLING & STORAGE PROTOCOL"
-    p_badge1.space_before = Pt(0)
-    p_badge1.space_after = Pt(14)
-    remove_bullets(p_badge1)
-    format_run(p_badge1.runs[0], font_size_pt=11, bold=True, color_rgb=(0x03, 0x69, 0xA1))
+    tips = [
+        (
+            "Cool Completely Before Slicing: ",
+            "Allow loaf to rest on a wire cooling rack for at least 1 full hour. Slicing warm bread compresses steam and creates a gummy, dense crumb.",
+        ),
+        (
+            "Preserve Crust Crispness: ",
+            "Store cut-side down in a breathable paper bag or wooden bread box at room temperature for up to 3 days. Never store in plastic bags, which soften the crust.",
+        ),
+        (
+            "Artisanal Serving Pairings: ",
+            "Slice thick and serve warm with salted European cultured butter, extra virgin olive oil with flaky sea salt, artisan cheeses, or alongside hearty soups.",
+        ),
+        (
+            "Baker's Companion Guide: ",
+            "Looking for crumb analysis, hydration scaling, and Dutch oven troubleshooting? ",
+        ),
+    ]
 
-    p_t1 = c1.text_frame.add_paragraph()
-    p_t1.text = "Cool Completely Before Slicing"
-    p_t1.space_before = Pt(0)
-    p_t1.space_after = Pt(3)
-    remove_bullets(p_t1)
-    format_run(p_t1.runs[0], font_size_pt=13.5, bold=True, color_rgb=(0x0F, 0x17, 0x2A))
+    p0 = body5.text_frame.paragraphs[0]
+    p0.space_before = Pt(0)
+    p0.space_after = Pt(14)
+    set_bullet_list(p0)
+    r_lead = p0.runs[0] if p0.runs else p0.add_run()
+    r_lead.text = tips[0][0]
+    format_run(r_lead, font_size_pt=13.5, bold=True, color_rgb=(0x0F, 0x17, 0x2A))
+    r_body = p0.add_run()
+    r_body.text = tips[0][1]
+    format_run(r_body, font_size_pt=13.0, bold=False, color_rgb=(0x33, 0x41, 0x55))
 
-    p_d1 = c1.text_frame.add_paragraph()
-    p_d1.text = "Allow loaf to rest on a wire cooling rack for at least 1 full hour. Slicing warm bread compresses steam and creates a gummy, dense crumb."
-    p_d1.space_before = Pt(0)
-    p_d1.space_after = Pt(16)
-    remove_bullets(p_d1)
-    format_run(p_d1.runs[0], font_size_pt=12.5, bold=False, color_rgb=(0x33, 0x41, 0x55))
+    for idx, (tip_title, tip_desc) in enumerate(tips[1:], start=1):
+        p = body5.text_frame.add_paragraph()
+        p.space_before = Pt(0)
+        p.space_after = Pt(14)
+        set_bullet_list(p)
+        r_l = p.add_run()
+        r_l.text = tip_title
+        format_run(r_l, font_size_pt=13.5, bold=True, color_rgb=(0x0F, 0x17, 0x2A))
+        r_d = p.add_run()
+        r_d.text = tip_desc
+        format_run(r_d, font_size_pt=13.0, bold=False, color_rgb=(0x33, 0x41, 0x55))
 
-    p_t2 = c1.text_frame.add_paragraph()
-    p_t2.text = "Preserve the Crust (No Plastic)"
-    p_t2.space_before = Pt(0)
-    p_t2.space_after = Pt(3)
-    remove_bullets(p_t2)
-    format_run(p_t2.runs[0], font_size_pt=13.5, bold=True, color_rgb=(0x0F, 0x17, 0x2A))
-
-    p_d2 = c1.text_frame.add_paragraph()
-    p_d2.text = "Store cut-side down in a breathable paper bag or wooden bread box at room temperature for up to 3 days. Avoid plastic bags, which trap moisture and soften the crust."
-    p_d2.space_before = Pt(0)
-    p_d2.space_after = Pt(0)
-    remove_bullets(p_d2)
-    format_run(p_d2.runs[0], font_size_pt=12.5, bold=False, color_rgb=(0x33, 0x41, 0x55))
-
-    # Right Card: Serving & Resources
-    c2 = slide5.placeholders[2]
-    c2.left = Inches(5.2)
-    c2.top = Inches(1.6)
-    c2.width = Inches(4.0)
-    c2.height = Inches(5.2)
-    style_card_placeholder(c2)
-
-    p_badge2 = c2.text_frame.paragraphs[0]
-    p_badge2.text = "SERVING IDEAS & RESOURCES"
-    p_badge2.space_before = Pt(0)
-    p_badge2.space_after = Pt(14)
-    remove_bullets(p_badge2)
-    format_run(p_badge2.runs[0], font_size_pt=11, bold=True, color_rgb=(0x03, 0x69, 0xA1))
-
-    p_t3 = c2.text_frame.add_paragraph()
-    p_t3.text = "Pairing & Serving Ideas"
-    p_t3.space_before = Pt(0)
-    p_t3.space_after = Pt(3)
-    remove_bullets(p_t3)
-    format_run(p_t3.runs[0], font_size_pt=13.5, bold=True, color_rgb=(0x0F, 0x17, 0x2A))
-
-    p_d3 = c2.text_frame.add_paragraph()
-    p_d3.text = "Slice thick and serve warm with salted European cultured butter, extra virgin olive oil with flaky sea salt, artisan cheeses, or dipping into hearty soups."
-    p_d3.space_before = Pt(0)
-    p_d3.space_after = Pt(16)
-    remove_bullets(p_d3)
-    format_run(p_d3.runs[0], font_size_pt=12.5, bold=False, color_rgb=(0x33, 0x41, 0x55))
-
-    p_t4 = c2.text_frame.add_paragraph()
-    p_t4.text = "Baker's Companion Guide"
-    p_t4.space_before = Pt(0)
-    p_t4.space_after = Pt(3)
-    remove_bullets(p_t4)
-    format_run(p_t4.runs[0], font_size_pt=13.5, bold=True, color_rgb=(0x0F, 0x17, 0x2A))
-
-    p_d4 = c2.text_frame.add_paragraph()
-    p_d4.text = "Looking for hydration ratios, whole wheat variations, and troubleshooting tips?"
-    p_d4.space_before = Pt(0)
-    p_d4.space_after = Pt(6)
-    remove_bullets(p_d4)
-    format_run(p_d4.runs[0], font_size_pt=12.5, bold=False, color_rgb=(0x33, 0x41, 0x55))
-
-    p_link = c2.text_frame.add_paragraph()
-    p_link.space_before = Pt(0)
-    p_link.space_after = Pt(0)
-    remove_bullets(p_link)
-    r_link = p_link.add_run()
-    r_link.text = "Explore the Complete Artisan Dutch Oven Guide"
-    r_link.hyperlink.address = "https://example.com/artisan-bread-guide"
-    format_run(r_link, font_size_pt=12.5, bold=True, color_rgb=(0x03, 0x69, 0xA1))
+        if idx == 3:
+            r_link = p.add_run()
+            r_link.text = "Explore the Complete Artisan Dutch Oven Guide"
+            r_link.hyperlink.address = "https://example.com/artisan-bread-guide"
+            format_run(r_link, font_size_pt=13.0, bold=True, color_rgb=(0x03, 0x69, 0xA1))
 
     prs.save(str(output_path))
     print(f"Saved accessible presentation to: {output_path}")
