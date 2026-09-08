@@ -1,9 +1,9 @@
 {
   "project": "pptx-a11y",
-  "active_subplan": "subplan-2-markdown-report",
-  "last_completed_task": "Subplan 1 Complete (PresentationML POUR Audit Engine)",
-  "next_task": "Task 2.1: Canonical W3C Knowledge Base & Link Map",
-  "status": "ready-for-subplan-2",
-  "updated_at": "2026-09-08T12:15:00Z",
+  "active_subplan": "subplan-3-html-and-themes",
+  "last_completed_task": "Subplan 2 Complete (Canonical POUR Markdown Report Engine)",
+  "next_task": "Task 3.1: SMACSS Theme Directory Structure & Token Contract",
+  "status": "ready-for-subplan-3",
+  "updated_at": "2026-09-08T12:35:00Z",
   "open_blockers": []
 }
