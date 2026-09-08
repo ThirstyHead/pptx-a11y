@@ -26,6 +26,10 @@ def audit_file(path: str | Path, ctx: Optional[AuditContext] = None) -> Dict[str
     if ctx is None:
         ctx = AuditContext(source_name=p.name)
 
+    import hashlib
+    file_bytes = p.read_bytes()
+    file_sha256 = hashlib.sha256(file_bytes).hexdigest()
+
     if is_encrypted_package(p):
         finding = Finding(
             rule_id="document-restricted-access",
@@ -47,8 +51,9 @@ def audit_file(path: str | Path, ctx: Optional[AuditContext] = None) -> Dict[str
         sorted_f = [finding]
         return {
             "file": p.name,
+            "sha256": file_sha256,
             "audited_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-            "tool": "pptx-a11y/0.2.0",
+            "tool": "pptx-a11y/0.3.0",
             "findings": [finding.to_dict()],
             "summary": summarize(sorted_f),
         }
@@ -74,8 +79,9 @@ def audit_file(path: str | Path, ctx: Optional[AuditContext] = None) -> Dict[str
     sorted_f = findings_sorted(findings)
     return {
         "file": p.name,
+        "sha256": file_sha256,
         "audited_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "tool": "pptx-a11y/0.1.0",
+        "tool": "pptx-a11y/0.3.0",
         "findings": [f.to_dict() for f in sorted_f],
         "summary": summarize(sorted_f),
     }

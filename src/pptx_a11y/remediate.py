@@ -1,6 +1,7 @@
 """Deterministic remediation engine for PowerPoint presentations."""
+import hashlib
 from pathlib import Path
-from typing import Dict
+from typing import Any, Dict
 from pptx import Presentation
 from .reading_order import check_slide_reading_order, reorder_slide_shapes
 from .rules import _get_sections, DEFAULT_SECTION_PATTERNS, VAGUE_LINK_TEXTS
@@ -10,9 +11,24 @@ def remediate_presentation(
     in_path: str | Path,
     out_path: str | Path,
     default_lang: str = "en-US",
-) -> Dict[str, int]:
-    prs = Presentation(str(in_path))
-    fixes = {
+) -> Dict[str, Any]:
+    in_file = Path(in_path).resolve()
+    out_file = Path(out_path).resolve()
+
+    if not in_file.exists():
+        raise FileNotFoundError(f"Input presentation not found: {in_file}")
+
+    if in_file == out_file:
+        raise ValueError(
+            f"Cannot remediate in place: input path and output path are identical ({in_file}). "
+            "pptx-a11y strictly guarantees that original presentation files remain immutable and untouched."
+        )
+
+    # Compute and verify original file checksum before opening
+    sha256_before = hashlib.sha256(in_file.read_bytes()).hexdigest()
+
+    prs = Presentation(str(in_file))
+    fixes: Dict[str, Any] = {
         "title_added": 0,
         "table_headers_set": 0,
         "language_tagged": 0,
@@ -24,6 +40,9 @@ def remediate_presentation(
         "restricted_access_removed": 0,
         "merged_cells_unmerged": 0,
         "slide_titles_fixed": 0,
+        "passwords_stripped": 0,
+        "original_sha256": sha256_before,
+        "original_file_immutable": True,
     }
 
     # 1. Remediate core title if missing
@@ -43,13 +62,14 @@ def remediate_presentation(
         prs.core_properties.title = inferred_title
         fixes["title_added"] += 1
 
-    # 2. Remediate restricted access (<p:modifyVerifier>)
+    # 2. Remediate restricted access (<p:modifyVerifier>) & strip passwords
     verifiers = prs._element.xpath(".//p:modifyVerifier | .//*[local-name()='modifyVerifier']")
     for v in verifiers:
         parent = v.getparent()
         if parent is not None:
             parent.remove(v)
             fixes["restricted_access_removed"] = fixes.get("restricted_access_removed", 0) + 1
+            fixes["passwords_stripped"] = fixes.get("passwords_stripped", 0) + 1
 
     # 3. Remediate slide titles (missing or duplicate)
     seen_titles = {}
@@ -193,5 +213,13 @@ def remediate_presentation(
         else:
             seen_sec[lower_clean] = 1
 
-    prs.save(str(out_path))
+    prs.save(str(out_file))
+
+    # Verify input file was strictly unmodified
+    sha256_after = hashlib.sha256(in_file.read_bytes()).hexdigest()
+    if sha256_before != sha256_after:
+        raise RuntimeError(
+            f"Integrity check failed: input presentation '{in_file}' was altered during remediation!"
+        )
+
     return fixes
