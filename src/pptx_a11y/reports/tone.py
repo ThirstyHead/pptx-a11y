@@ -6,6 +6,10 @@ WHO_MAP = {
         "People who are blind, have low vision, or process information through audio now receive the complete "
         "message through spoken screen reader narration or braille displays."
     ),
+    "1.2.2": (
+        "People who are deaf or hard of hearing can now access spoken dialogue and auditory information through "
+        "synchronized closed captions."
+    ),
     "1.3.1": (
         "People navigating by screen reader, or individuals who benefit from clean, predictable structure, "
         "can follow headers, table data relationships, and slide layouts without disorientation."
@@ -70,6 +74,32 @@ RULE_BARRIER_EXPLANATIONS = {
     "semantic-placeholders-missing": (
         "The slide relies on unparented text boxes rather than semantic layout placeholders, which degrades "
         "predictable screen reader reading order."
+    ),
+    "media-subtitles-missing": (
+        "Audio or video content is presented without synchronized closed captions or text alternatives, "
+        "preventing readers who are deaf or hard of hearing from accessing spoken dialogue."
+    ),
+    "table-merged-cells": (
+        "The table contains merged or split cells, disrupting the two-dimensional grid and causing screen "
+        "readers to lose track of column and row relationships."
+    ),
+    "reading-order-inverted": (
+        "Slide shapes are visually positioned out of sequence compared to their underlying shape tree order, "
+        "meaning screen readers announce content out of order."
+    ),
+    "section-name-default": (
+        "The presentation group uses a generic default section name, offering no descriptive context for navigation."
+    ),
+    "section-name-duplicate": (
+        "Multiple presentation sections share the same name, creating ambiguity in the slide outline."
+    ),
+    "document-restricted-access": (
+        "The presentation has password encryption or Information Rights Management (IRM) enabled, blocking "
+        "assistive technologies from accessing its structure."
+    ),
+    "chart-missing-alt": (
+        "The chart or embedded object does not have alternative text or an accompanying data table, leaving its "
+        "information inaccessible to screen reader users."
     ),
 }
 

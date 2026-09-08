@@ -81,6 +81,16 @@ def render_md(
             lines.append(f"- **Recommended Remediation:** {f.get('fix', 'Inspect and resolve.')}")
             lines.append(f"- **Who Benefits:** {WHO_MAP.get(sc, 'All readers gain improved access.')}")
             lines.append(f"- **Technical Evidence:** `{f.get('evidence', '')}`")
+
+            why_unfixable = f.get("why_unfixable")
+            if why_unfixable:
+                lines.append(f"- **Why Software Cannot Automatically Fix This:** {why_unfixable}")
+
+            manual_steps = f.get("manual_steps")
+            if manual_steps:
+                lines.append("- **Human in the Loop Remediation Protocol:**")
+                for s_num, step in enumerate(manual_steps, start=1):
+                    lines.append(f"  {s_num}. {step}")
             lines.append("")
 
     report_text = "\n".join(lines) + "\n"

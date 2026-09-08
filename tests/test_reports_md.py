@@ -63,3 +63,31 @@ def test_markdown_remediation_progress():
     assert "Remediation Progress" in md
     assert "100.0% improvement" in md
     assert "PASS" in md
+
+
+def test_markdown_manual_guidance_protocol():
+    audit = {
+        "file": "deck.pptx",
+        "summary": {"total": 1, "blocking": 1, "pass": False},
+        "findings": [
+            {
+                "rule_id": "image-alt-missing",
+                "sc": "1.1.1",
+                "severity": "critical",
+                "location": "Slide 1",
+                "description": "Image has no alt text.",
+                "evidence": "xml",
+                "fixable": False,
+                "fix": "Add alt text.",
+                "why_unfixable": "Automated tools cannot guess author intent.",
+                "manual_steps": ["Right-click image", "Select View Alt Text", "Type description"],
+            }
+        ],
+    }
+    md = render_md(audit)
+    assert "Why Software Cannot Automatically Fix This" in md
+    assert "Automated tools cannot guess author intent." in md
+    assert "Human in the Loop Remediation Protocol:" in md
+    assert "1. Right-click image" in md
+    assert "2. Select View Alt Text" in md
+    assert "3. Type description" in md
