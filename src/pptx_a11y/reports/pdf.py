@@ -86,7 +86,7 @@ def render_pdf(
         # 2. Inject accessibility tags and catalog metadata using pikepdf
         with pikepdf.open(tmp_path) as pdf:
             pdf.Root.Lang = pikepdf.String(lang)
-            with pdf.open_metadata() as meta:
+            with pdf.open_metadata(set_pikepdf_as_editor=False) as meta:
                 meta["dc:title"] = doc_title
                 meta["pdf:Producer"] = "pptx-a11y accessible PDF engine"
 
