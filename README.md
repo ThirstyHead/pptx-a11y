@@ -58,6 +58,28 @@ pptx-a11y --help
 
 ## Quickstart
 
+### Example Test Presentations
+
+Two sample presentations based on an artisanal bread baking recipe are provided in `examples/` for evaluating both the CLI and GUI:
+
+- **`examples/No Knead Bread.pptx` (Clean Reference):**
+  A fully accessible 5-slide presentation featuring structured slide placeholders, accessible table headers, descriptive image alt text, distinct slide titles, and natural language tags. Audits cleanly with **0 findings (100% WCAG 2.2 AA compliance)**.
+
+- **`examples/No Knead Bread-test.pptx` (Accessibility Barriers):**
+  Intentionally includes every digital accessibility barrier `pptx-a11y` checks: missing metadata title, missing/duplicate slide titles, missing image alt text, merged table cells, undeclared table headers, inverted reading order, uncaptioned media, missing language tags, default/duplicate section names, and vague link text.
+
+```bash
+# Test the clean deck (passes cleanly, exits 0):
+pptx-a11y "examples/No Knead Bread.pptx" --format md,html,pdf,json --output-dir ./reports-clean
+
+# Test the barrier deck (detects barriers, exits 1):
+pptx-a11y "examples/No Knead Bread-test.pptx" --format md,html,pdf,json --output-dir ./reports-barriers
+```
+
+Or drag both files directly into the desktop GUI (`pptx-a11y --gui` or `pptx-a11y-gui`) to test batch analysis, progress tracking, and interactive triage!
+
+---
+
 ### 1. Audit a Presentation
 
 Audit a slide deck and generate all report formats (`.md`, `.html`, `.pdf`, `.json`):
