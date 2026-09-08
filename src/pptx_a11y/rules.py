@@ -38,6 +38,94 @@ def register_rule(rule_cls: Type[Rule]) -> Type[Rule]:
 # Principle 2: Operable
 # ---------------------------------------------------------------------------
 
+DEFAULT_SECTION_PATTERNS = {
+    "default section",
+    "untitled section",
+    "new section",
+    "section",
+    "section 1",
+    "section 2",
+    "section 3",
+    "section 4",
+    "section 5",
+}
+
+
+def _get_sections(prs: Presentation):
+    sec_elems = prs._element.xpath(".//p:sectionLst/p:section | .//*[local-name()='section']")
+    results = []
+    for idx, elem in enumerate(sec_elems, start=1):
+        name = elem.get("name", "").strip()
+        results.append((idx, name, elem))
+    return results
+
+
+@register_rule
+class DefaultSectionNameRule(Rule):
+    rule_id = "section-name-default"
+    sc = "2.4.2"
+    severity = "moderate"
+    title = "Default Section Name Used"
+
+    def check(self, prs: Presentation, ctx: AuditContext) -> List[Finding]:
+        findings = []
+        for idx, name, elem in _get_sections(prs):
+            if name.lower() in DEFAULT_SECTION_PATTERNS:
+                findings.append(Finding(
+                    rule_id=self.rule_id,
+                    sc=self.sc,
+                    severity=self.severity,
+                    location=f"Section {idx} ('{name}')",
+                    description=f"Section {idx} uses a default, non-descriptive name '{name}'.",
+                    evidence=f"Section element in presentation.xml has name='{name}'",
+                    fixable=True,
+                    fix="Rename the section to describe the topic covered by its slides.",
+                    why_unfixable="Automated tools can only infer section names from slide titles; manual naming preferred.",
+                    manual_steps=[
+                        f"In PowerPoint's thumbnail pane, locate Section {idx} ('{name}').",
+                        "Right-click the section header and select 'Rename Section'.",
+                        "Provide a clear, descriptive title representing the group of slides.",
+                    ],
+                ))
+        return findings
+
+
+@register_rule
+class DuplicateSectionNameRule(Rule):
+    rule_id = "section-name-duplicate"
+    sc = "2.4.2"
+    severity = "moderate"
+    title = "Duplicate Section Name"
+
+    def check(self, prs: Presentation, ctx: AuditContext) -> List[Finding]:
+        findings = []
+        seen = {}
+        for idx, name, elem in _get_sections(prs):
+            if not name:
+                continue
+            lower_name = name.lower()
+            if lower_name in seen:
+                prev_idx = seen[lower_name]
+                findings.append(Finding(
+                    rule_id=self.rule_id,
+                    sc=self.sc,
+                    severity=self.severity,
+                    location=f"Section {idx} ('{name}')",
+                    description=f"Section {idx} repeats the section name '{name}' previously used for Section {prev_idx}.",
+                    evidence=f"Duplicate section name '{name}' across sections {prev_idx} and {idx}",
+                    fixable=True,
+                    fix=f"Differentiate section names (e.g., '{name} (Part 2)' or '{name} - Continued').",
+                    why_unfixable="Disambiguating section titles requires human editorial judgment.",
+                    manual_steps=[
+                        f"In PowerPoint's thumbnail pane, right-click the second '{name}' section header.",
+                        "Select 'Rename Section' and differentiate it (e.g. '{name} (Part 2)').",
+                    ],
+                ))
+            else:
+                seen[lower_name] = idx
+        return findings
+
+
 @register_rule
 class PresentationTitleRule(Rule):
     rule_id = "title-missing"

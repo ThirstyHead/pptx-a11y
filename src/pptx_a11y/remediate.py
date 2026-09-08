@@ -14,6 +14,7 @@ def remediate_presentation(
         "title_added": 0,
         "table_headers_set": 0,
         "language_tagged": 0,
+        "sections_renamed": 0,
     }
 
     # 1. Remediate core title if missing
@@ -50,6 +51,24 @@ def remediate_presentation(
                             new_rPr = run._r.get_or_add_rPr()
                             new_rPr.set("lang", default_lang)
                             fixes["language_tagged"] += 1
+
+    # 3. Remediate section names (default and duplicates)
+    from .rules import _get_sections, DEFAULT_SECTION_PATTERNS
+    seen_sec = {}
+    for s_idx, name, s_elem in _get_sections(prs):
+        clean_name = name
+        if name.lower() in DEFAULT_SECTION_PATTERNS:
+            clean_name = f"Topic Section {s_idx}"
+            s_elem.set("name", clean_name)
+            fixes["sections_renamed"] += 1
+        lower_clean = clean_name.lower()
+        if lower_clean in seen_sec:
+            seen_sec[lower_clean] += 1
+            disambiguated = f"{clean_name} (Part {seen_sec[lower_clean]})"
+            s_elem.set("name", disambiguated)
+            fixes["sections_renamed"] += 1
+        else:
+            seen_sec[lower_clean] = 1
 
     prs.save(str(out_path))
     return fixes
