@@ -63,35 +63,54 @@ def build_accessible_deck(output_path: Path):
     set_run_lang(sub1.text_frame.paragraphs[0].runs[0])
 
     # -------------------------------------------------------------
-    # Slide 2: Introduction & Overview
+    # Slide 2: Introduction & Overview (Two-column layout)
     # -------------------------------------------------------------
-    slide2 = prs.slides.add_slide(prs.slide_layouts[1])
+    slide2 = prs.slides.add_slide(prs.slide_layouts[3])
     title2 = slide2.shapes.title
     title2.text = "Introduction & Overview"
     set_run_lang(title2.text_frame.paragraphs[0].runs[0])
 
+    # Left content placeholder for text
     body2 = slide2.placeholders[1]
+    body2.left = Inches(0.8)
+    body2.top = Inches(1.8)
+    body2.width = Inches(4.5)
+    body2.height = Inches(4.8)
+
     body2.text = (
         "The simplicity of this no knead bread is what makes it a household favorite. "
         "Your entire home will fill with the aroma of fresh artisan bakery bread as it bakes."
     )
     set_run_lang(body2.text_frame.paragraphs[0].runs[0])
+
     p2 = body2.text_frame.add_paragraph()
     p2.text = (
         "Requiring zero special equipment and just four basic pantry staples, "
         "this method delivers a golden, blistered crust and a moist, airy crumb."
     )
+    p2.space_before = Pt(14)
     set_run_lang(p2.runs[0])
 
-    # Add bread photo with descriptive alt text
+    p3 = body2.text_frame.add_paragraph()
+    p3.text = (
+        "A slow, 12 to 18-hour room-temperature fermentation develops rich flavor "
+        "and a chewy artisan texture without any manual kneading."
+    )
+    p3.space_before = Pt(14)
+    set_run_lang(p3.runs[0])
+
+    # Remove unused right placeholder from DOM
+    slide2.shapes._spTree.remove(slide2.placeholders[2]._element)
+
+    # Add bread photo cleanly on the right side
     left = Inches(5.5)
-    top = Inches(2.2)
+    top = Inches(2.0)
     pic = slide2.shapes.add_picture(str(IMAGE_PATH), left, top, width=Inches(3.8))
     pic.name = "Artisan Bread Loaf"
     cNvPr = pic._element.xpath(".//p:cNvPr")[0]
     cNvPr.set(
         "descr",
-        "A freshly baked round loaf of golden-brown artisanal no-knead bread with a crispy, flour-dusted crust.",
+        "A freshly baked round loaf of golden-brown artisanal no-knead bread with a crispy, flour-dusted crust in a Dutch oven.",
     )
 
     # -------------------------------------------------------------
