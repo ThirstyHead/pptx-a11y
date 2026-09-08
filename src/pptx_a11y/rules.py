@@ -450,6 +450,54 @@ class TableMergedCellsRule(Rule):
         return findings
 
 
+@register_rule
+class ChartAltTextRule(Rule):
+    rule_id = "chart-missing-alt"
+    sc = "1.1.1"
+    severity = "critical"
+    title = "Chart or Embedded Object Missing Alt Text"
+
+    def check(self, prs: Presentation, ctx: AuditContext) -> List[Finding]:
+        findings = []
+        for s_idx, slide in enumerate(prs.slides, start=1):
+            for shape in slide.shapes:
+                is_chart_or_ole = False
+                if getattr(shape, "has_chart", False):
+                    is_chart_or_ole = True
+                elif shape._element.xpath(".//*[local-name()='chart' or local-name()='oleObj']"):
+                    is_chart_or_ole = True
+
+                if not is_chart_or_ole:
+                    continue
+
+                cNvPr = shape._element.xpath(".//p:cNvPr")
+                descr = ""
+                title = ""
+                if cNvPr:
+                    descr = cNvPr[0].get("descr", "").strip()
+                    title = cNvPr[0].get("title", "").strip()
+
+                if not descr and not title:
+                    findings.append(Finding(
+                        rule_id=self.rule_id,
+                        sc=self.sc,
+                        severity=self.severity,
+                        location=f"Slide {s_idx}, Chart '{shape.name}'",
+                        description=f"Chart or embedded object '{shape.name}' on Slide {s_idx} has no alternative text.",
+                        evidence=f"<p:cNvPr> for '{shape.name}' lacks both descr and title attributes",
+                        fixable=False,
+                        fix="Provide a concise text summary of the chart's data trend and include an accompanying data table.",
+                        why_unfixable="Data visualization meaning requires human context or an accompanying data table.",
+                        manual_steps=[
+                            f"Select '{shape.name}' on Slide {s_idx}.",
+                            "Right-click and select 'View Alt Text'.",
+                            "Enter a 1-2 sentence description summarizing the main trends or data points.",
+                            "Provide an accessible data table with explicit headers on the slide or in notes.",
+                        ],
+                    ))
+        return findings
+
+
 # ---------------------------------------------------------------------------
 # Principle 3: Understandable
 # ---------------------------------------------------------------------------
