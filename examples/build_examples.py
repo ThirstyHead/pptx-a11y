@@ -381,7 +381,13 @@ def build_test_deck(output_path: Path):
     # Barrier 1: title-missing (strip core properties title)
     prs.core_properties.title = ""
 
-    # Barrier 2 & 3: section-name-default & section-name-duplicate
+    # Barrier 2: document-restricted-access (MS Accessibility: Restricted access)
+    p_ns = "http://schemas.openxmlformats.org/presentationml/2006/main"
+    mv = etree.SubElement(prs._element, f"{{{p_ns}}}modifyVerifier")
+    mv.set("cryptProviderType", "rsaAES")
+    mv.set("cryptAlgorithmClass", "hash")
+
+    # Barrier 3: section-name-default & section-name-duplicate (MS Accessibility: Default/Duplicate section name)
     extLst = etree.SubElement(
         prs._element,
         "{http://schemas.openxmlformats.org/presentationml/2006/main}extLst",
@@ -404,7 +410,7 @@ def build_test_deck(output_path: Path):
         )
 
     # -------------------------------------------------------------
-    # Slide 1: Title Slide (with Barrier 4: reading-order-inverted & Barrier 5: language-missing)
+    # Slide 1: Title Slide (with reading-order-inverted & color-contrast-insufficient)
     # -------------------------------------------------------------
     slide1 = prs.slides.add_slide(prs.slide_layouts[0])
     title1 = slide1.shapes.title
@@ -413,25 +419,28 @@ def build_test_deck(output_path: Path):
 
     sub1 = slide1.placeholders[1]
     sub1.text = "No kneading required, 4 simple ingredients, baked in a Dutch Oven."
-    format_run(sub1.text_frame.paragraphs[0].runs[0], font_size_pt=18, bold=False, color_rgb=(0x47, 0x55, 0x69))
+    # Barrier 4: color-contrast-insufficient (MS Accessibility: Hard-to-read text contrast)
+    # Light slate #94A3B8 on white background gives contrast ratio 2.44:1 (< 3.0:1 / 4.5:1 required)
+    format_run(sub1.text_frame.paragraphs[0].runs[0], font_size_pt=18, bold=False, color_rgb=(0x94, 0xA3, 0xB8))
 
     # Strip language tag on Slide 1
     rPr = sub1.text_frame.paragraphs[0].runs[0]._r.find("{http://schemas.openxmlformats.org/drawingml/2006/main}rPr")
     if rPr is not None and "lang" in rPr.attrib:
         del rPr.attrib["lang"]
 
-    # Barrier 4: reading-order-inverted (Subtitle placed before Title in spTree DOM, but lower visually)
+    # Barrier 5: reading-order-inverted (MS Accessibility: Check reading order)
     spTree1 = slide1.shapes._spTree
     spTree1.remove(title1._element)
     spTree1.append(title1._element)
 
     # -------------------------------------------------------------
-    # Slide 2: Introduction & Overview (with Barrier 6: image-alt-missing)
+    # Slide 2: Introduction & Overview (with slide-title-missing & image-alt-missing)
     # -------------------------------------------------------------
     slide2 = prs.slides.add_slide(prs.slide_layouts[3])
     title2 = slide2.shapes.title
-    title2.text = "Introduction & Overview"
-    format_run(title2.text_frame.paragraphs[0].runs[0], font_size_pt=30, bold=True, color_rgb=(0x0F, 0x17, 0x2A))
+    # Barrier 6: slide-title-missing (MS Accessibility: Missing slide title)
+    if title2:
+        title2.text = ""
 
     body2 = slide2.placeholders[1]
     body2.left = Inches(0.8)
@@ -535,13 +544,20 @@ def build_test_deck(output_path: Path):
             cell.text = val
             format_run(cell.text_frame.paragraphs[0].runs[0], font_size_pt=13.5, bold=False, color_rgb=(0x33, 0x41, 0x55))
 
+    # Barrier 9: table-merged-cells (MS Accessibility: Use of merged or split cells)
+    cell_water = table.cell(4, 1)
+    cell_water.text = "1 1/2 cups (Room temperature, approx. 70°F)"
+    cell_water._tc.set("gridSpan", "2")
+    table.cell(4, 2).text = ""
+
     # -------------------------------------------------------------
     # Slide 4: Instructions (Step-by-Step Instructions)
     # -------------------------------------------------------------
     slide4 = prs.slides.add_slide(prs.slide_layouts[1])
     title4 = slide4.shapes.title
-    title4.text = "Step-by-Step Instructions"
-    format_run(title4.text_frame.paragraphs[0].runs[0], font_size_pt=30, bold=True, color_rgb=(0x0F, 0x17, 0x2A))
+    if title4:
+        title4.text = "Step-by-Step Instructions"
+        format_run(title4.text_frame.paragraphs[0].runs[0], font_size_pt=30, bold=True, color_rgb=(0x0F, 0x17, 0x2A))
 
     body4 = slide4.placeholders[1]
     body4.left = Inches(0.8)
@@ -601,12 +617,14 @@ def build_test_deck(output_path: Path):
         format_run(r_d, font_size_pt=13.0, bold=False, color_rgb=(0x33, 0x41, 0x55))
 
     # -------------------------------------------------------------
-    # Slide 5: Serving & Storage Tips (with Barrier 8: link-text-vague)
+    # Slide 5: Serving & Storage Tips (with slide-title-duplicate & link-text-vague)
     # -------------------------------------------------------------
     slide5 = prs.slides.add_slide(prs.slide_layouts[1])
     title5 = slide5.shapes.title
-    title5.text = "Serving & Storage Tips"
-    format_run(title5.text_frame.paragraphs[0].runs[0], font_size_pt=30, bold=True, color_rgb=(0x0F, 0x17, 0x2A))
+    if title5:
+        # Barrier 10: slide-title-duplicate (MS Accessibility: Duplicate slide title)
+        title5.text = "Step-by-Step Instructions"
+        format_run(title5.text_frame.paragraphs[0].runs[0], font_size_pt=30, bold=True, color_rgb=(0x0F, 0x17, 0x2A))
 
     body5 = slide5.placeholders[1]
     body5.left = Inches(0.8)

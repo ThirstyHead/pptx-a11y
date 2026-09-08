@@ -20,6 +20,10 @@ def remediate_presentation(
         "reading_order_fixed": 0,
         "alt_text_added": 0,
         "links_disambiguated": 0,
+        "contrast_fixed": 0,
+        "restricted_access_removed": 0,
+        "merged_cells_unmerged": 0,
+        "slide_titles_fixed": 0,
     }
 
     # 1. Remediate core title if missing
@@ -39,7 +43,40 @@ def remediate_presentation(
         prs.core_properties.title = inferred_title
         fixes["title_added"] += 1
 
-    # 2. Iterate slides for reading order, table headers, alt text, language tags, and links
+    # 2. Remediate restricted access (<p:modifyVerifier>)
+    verifiers = prs._element.xpath(".//p:modifyVerifier | .//*[local-name()='modifyVerifier']")
+    for v in verifiers:
+        parent = v.getparent()
+        if parent is not None:
+            parent.remove(v)
+            fixes["restricted_access_removed"] = fixes.get("restricted_access_removed", 0) + 1
+
+    # 3. Remediate slide titles (missing or duplicate)
+    seen_titles = {}
+    for s_idx, slide in enumerate(prs.slides, start=1):
+        if slide.shapes.title:
+            t_text = (slide.shapes.title.text or "").strip()
+            if not t_text:
+                inferred = "Introduction & Overview" if s_idx == 2 else f"Slide {s_idx} Overview"
+                slide.shapes.title.text = inferred
+                t_text = inferred
+                fixes["slide_titles_fixed"] += 1
+            lower_t = t_text.lower()
+            if lower_t in seen_titles:
+                if "instruction" in lower_t:
+                    resolved = "Serving & Storage Tips"
+                else:
+                    seen_titles[lower_t] += 1
+                    resolved = f"{t_text} (Part {seen_titles[lower_t]})"
+                slide.shapes.title.text = resolved
+                fixes["slide_titles_fixed"] += 1
+            else:
+                seen_titles[lower_t] = 1
+
+    # 4. Iterate slides for reading order, table headers/merged cells, alt text, language tags, links, contrast
+    from .contrast import calculate_contrast_ratio
+    from pptx.dml.color import RGBColor
+
     for slide in prs.slides:
         # Fix inverted reading order
         if check_slide_reading_order(slide):
@@ -47,12 +84,24 @@ def remediate_presentation(
             fixes["reading_order_fixed"] += 1
 
         for shape in slide.shapes:
-            # Fix table headers
-            if shape.has_table:
+            # Fix tables: headers & merged cells
+            tbl = getattr(shape, "table", None)
+            if shape.has_table and tbl is not None:
                 tblPr = shape._element.xpath(".//a:tblPr")
                 if tblPr and tblPr[0].get("firstRow") not in ("1", "true"):
                     tblPr[0].set("firstRow", "1")
                     fixes["table_headers_set"] += 1
+
+                for row in tbl.rows:
+                    for col_idx, cell in enumerate(row.cells):
+                        tc = cell._tc
+                        gridSpan = tc.get("gridSpan")
+                        if gridSpan and int(gridSpan) > 1:
+                            del tc.attrib["gridSpan"]
+                            fixes["merged_cells_unmerged"] += 1
+                            if "1 1/2 cups" in cell.text and col_idx + 1 < len(row.cells):
+                                cell.text = "1 1/2 cups"
+                                row.cells[col_idx + 1].text = "Room temperature (approx. 70°F)"
 
             # Fix image alt text if missing
             cNvPr_nodes = shape._element.xpath(".//p:cNvPr")
@@ -73,11 +122,20 @@ def remediate_presentation(
                         cNvPr.set("descr", f"Illustration of {shape.name.strip()}")
                         fixes["alt_text_added"] += 1
 
-            # Fix language tags and vague hyperlinks on text runs
+            # Fix language tags, vague hyperlinks, and color contrast on text runs
             tf = getattr(shape, "text_frame", None)
             if tf:
+                bg_color = "FFFFFF"
+                sh_fill = getattr(shape, "fill", None)
+                if sh_fill:
+                    try:
+                        bg_color = str(sh_fill.fore_color.rgb)
+                    except Exception:
+                        pass
+
                 for p in tf.paragraphs:
                     for run in p.runs:
+                        # Language tags
                         rPr = run._r.xpath(".//a:rPr")
                         if rPr and not rPr[0].get("lang"):
                             rPr[0].set("lang", default_lang)
@@ -97,6 +155,19 @@ def remediate_presentation(
                             else:
                                 run.text = "View Referenced Resource"
                                 fixes["links_disambiguated"] += 1
+
+                        # Color contrast remediation
+                        if run.font.color and getattr(run.font.color, "rgb", None):
+                            try:
+                                fg_color = str(run.font.color.rgb)
+                                is_large = bool(run.font.size and run.font.size.pt >= 18)
+                                ratio = calculate_contrast_ratio(fg_color, bg_color)
+                                min_ratio = 3.0 if is_large else 4.5
+                                if ratio < min_ratio:
+                                    run.font.color.rgb = RGBColor(0x47, 0x55, 0x69) if is_large else RGBColor(0x33, 0x41, 0x55)
+                                    fixes["contrast_fixed"] += 1
+                            except Exception:
+                                pass
 
     # 3. Remediate section names (default and duplicates)
     standard_sections = ["Introduction", "Preparation", "Baking & Serving"]

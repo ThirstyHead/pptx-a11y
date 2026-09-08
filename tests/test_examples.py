@@ -31,8 +31,13 @@ def test_barrier_test_example_presentation():
         "link-text-vague",
         "image-alt-missing",
         "table-header-missing",
+        "table-merged-cells",
         "language-missing",
         "reading-order-inverted",
+        "color-contrast-insufficient",
+        "document-restricted-access",
+        "slide-title-missing",
+        "slide-title-duplicate",
     }
     missing = expected_rules - rule_ids
     assert not missing, f"Test deck is missing expected barrier rules: {missing}"
@@ -50,6 +55,10 @@ def test_auto_remediation_of_test_presentation(tmp_path: Path):
     assert fixes["reading_order_fixed"] > 0
     assert fixes["alt_text_added"] > 0
     assert fixes["links_disambiguated"] > 0
+    assert fixes["contrast_fixed"] > 0
+    assert fixes["restricted_access_removed"] > 0
+    assert fixes["merged_cells_unmerged"] > 0
+    assert fixes["slide_titles_fixed"] > 0
 
     # Remediated deck must pass cleanly with 0 findings, exactly like No Knead Bread.pptx
     res = audit_file(remediated_p)

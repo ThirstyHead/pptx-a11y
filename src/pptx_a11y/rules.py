@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import List, Type
 from pptx.presentation import Presentation
 from pptx.enum.shapes import MSO_SHAPE_TYPE
+from .contrast import calculate_contrast_ratio
 from .findings import Finding, Severity
 from .reading_order import check_slide_reading_order
 
@@ -626,4 +627,52 @@ class ReadingOrderRule(Rule):
                         "Drag shapes into the intended reading order.",
                     ],
                 ))
+        return findings
+
+
+@register_rule
+class ColorContrastRule(Rule):
+    rule_id = "color-contrast-insufficient"
+    sc = "1.4.3"
+    severity = "serious"
+    title = "Text Contrast Is Insufficient"
+
+    def check(self, prs: Presentation, ctx: AuditContext) -> List[Finding]:
+        findings = []
+        for s_idx, slide in enumerate(prs.slides, start=1):
+            for shape in slide.shapes:
+                tf = getattr(shape, "text_frame", None)
+                if not tf:
+                    continue
+                bg_color = "FFFFFF"
+                sh_fill = getattr(shape, "fill", None)
+                if sh_fill:
+                    try:
+                        bg_color = str(sh_fill.fore_color.rgb)
+                    except Exception:
+                        pass
+                for p in tf.paragraphs:
+                    for r in p.runs:
+                        if r.font.color and getattr(r.font.color, "rgb", None):
+                            try:
+                                fg_color = str(r.font.color.rgb)
+                                is_large = bool(r.font.size and r.font.size.pt >= 18)
+                                ratio = calculate_contrast_ratio(fg_color, bg_color)
+                                min_ratio = 3.0 if is_large else 4.5
+                                if ratio < min_ratio:
+                                    findings.append(Finding(
+                                        rule_id=self.rule_id,
+                                        sc=self.sc,
+                                        severity=self.severity,
+                                        location=f"Slide {s_idx} ({shape.name})",
+                                        description=f"Text on Slide {s_idx} has contrast ratio {ratio:.2f}:1 against background #{bg_color}, failing WCAG {min_ratio}:1 minimum.",
+                                        evidence=f"FG #{fg_color} on BG #{bg_color} (ratio {ratio:.2f}:1, required {min_ratio}:1)",
+                                        fixable=True,
+                                        fix="Darken text color or adjust background to ensure a minimum contrast ratio of 4.5:1 (3:1 for large text).",
+                                    ))
+                                    break
+                            except Exception:
+                                pass
+                    if any(f.location.startswith(f"Slide {s_idx} ({shape.name})") for f in findings if f.rule_id == self.rule_id):
+                        break
         return findings
