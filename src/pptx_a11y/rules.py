@@ -494,6 +494,37 @@ class LanguageRule(Rule):
 # ---------------------------------------------------------------------------
 
 @register_rule
+class RestrictedAccessRule(Rule):
+    rule_id = "document-restricted-access"
+    sc = "4.1.2"
+    severity = "critical"
+    title = "Presentation Access Restricted or Encrypted"
+
+    def check(self, prs: Presentation, ctx: AuditContext) -> List[Finding]:
+        findings = []
+        verifiers = prs._element.xpath(".//p:modifyVerifier | .//*[local-name()='modifyVerifier']")
+        if verifiers:
+            findings.append(Finding(
+                rule_id=self.rule_id,
+                sc=self.sc,
+                severity=self.severity,
+                location="Presentation Security (presentation.xml)",
+                description="The presentation has modify verification or restricted access permissions enabled.",
+                evidence="<p:modifyVerifier> found in presentation.xml",
+                fixable=False,
+                fix="Remove edit restrictions or DRM permissions so assistive technologies can read all content.",
+                why_unfixable="Cryptographic permissions and DRM protection cannot be removed without owner credentials.",
+                manual_steps=[
+                    "Open the presentation in PowerPoint with authoring privileges.",
+                    "Go to 'File' -> 'Info' -> 'Protect Presentation'.",
+                    "Select 'Encrypt with Password' or 'Restrict Access' and clear all restrictions.",
+                    "Save the presentation file.",
+                ],
+            ))
+        return findings
+
+
+@register_rule
 class SemanticStructureRule(Rule):
     rule_id = "semantic-placeholders-missing"
     sc = "1.3.2"
