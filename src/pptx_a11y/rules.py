@@ -5,6 +5,7 @@ from typing import List, Type
 from pptx.presentation import Presentation
 from pptx.enum.shapes import MSO_SHAPE_TYPE
 from .findings import Finding, Severity
+from .reading_order import check_slide_reading_order
 
 
 @dataclass
@@ -426,5 +427,36 @@ class SemanticStructureRule(Rule):
                     evidence=f"Slide {s_idx} has {len(slide.shapes)} shapes but 0 placeholders in p:spTree",
                     fixable=False,
                     fix="Rebuild the slide using standard PowerPoint slide layouts with title and content placeholders.",
+                ))
+        return findings
+
+
+@register_rule
+class ReadingOrderRule(Rule):
+    rule_id = "reading-order-inverted"
+    sc = "1.3.2"
+    severity = "serious"
+    title = "Slide Content Reading Order Inverted"
+
+    def check(self, prs: Presentation, ctx: AuditContext) -> List[Finding]:
+        findings = []
+        for s_idx, slide in enumerate(prs.slides, start=1):
+            if check_slide_reading_order(slide):
+                findings.append(Finding(
+                    rule_id=self.rule_id,
+                    sc=self.sc,
+                    severity=self.severity,
+                    location=f"Slide {s_idx}",
+                    description=f"Shapes on Slide {s_idx} appear visually out of order compared to their screen reader sequence.",
+                    evidence=f"Slide {s_idx} shape tree coordinates show top-positioned elements placed after lower elements in p:spTree",
+                    fixable=True,
+                    fix="Reorder shapes in the PowerPoint Selection Pane / Reading Order pane to follow logical top-to-bottom sequence.",
+                    why_unfixable="Automated spatial reordering may alter visual shape layering; review in Reading Order Pane.",
+                    manual_steps=[
+                        f"Navigate to Slide {s_idx} in PowerPoint.",
+                        "On the ribbon, select 'Home' -> 'Arrange' -> 'Selection Pane' (or 'Review' -> 'Check Accessibility' -> 'Reading Order Pane').",
+                        "Verify shapes are ordered top-to-bottom and left-to-right.",
+                        "Drag shapes into the intended reading order.",
+                    ],
                 ))
         return findings
