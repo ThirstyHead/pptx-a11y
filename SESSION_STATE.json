@@ -1,9 +1,9 @@
 {
   "project": "pptx-a11y",
-  "active_subplan": "subplan-3-html-and-themes",
-  "last_completed_task": "Subplan 2 Complete (Canonical POUR Markdown Report Engine)",
-  "next_task": "Task 3.1: SMACSS Theme Directory Structure & Token Contract",
-  "status": "ready-for-subplan-3",
-  "updated_at": "2026-09-08T12:35:00Z",
+  "active_subplan": "subplan-4-pdf-report",
+  "last_completed_task": "Subplan 3 Complete (SMACSS Themes & Accessible HTML5 Report)",
+  "next_task": "Task 4.1: Headless Tagged PDF Engine",
+  "status": "ready-for-subplan-4",
+  "updated_at": "2026-09-08T12:50:00Z",
   "open_blockers": []
 }
