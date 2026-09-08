@@ -42,3 +42,37 @@ def test_batch_worker_execution(qtbot, tmp_path: Path):
     # Check reports were written
     assert (tmp_path / "clean-a11y-report.md").exists()
     assert (tmp_path / "clean-audit.json").exists()
+
+
+def test_batch_worker_all_formats_and_error(tmp_path: Path):
+    fixture_clean = FIXTURES / "clean.pptx"
+    item1 = BatchItem(path=fixture_clean)
+    item2 = BatchItem(path=tmp_path / "non_existent.pptx")
+
+    worker = BatchWorker(
+        items=[item1, item2],
+        out_dir=tmp_path,
+        formats=["md", "html", "pdf", "json"],
+        theme="ocean",
+        auto_fix=True,
+    )
+
+    # Run directly in test process to ensure branch coverage
+    worker.run()
+
+    assert item1.status == "Completed"
+    assert (tmp_path / "clean-a11y-report.pdf").exists()
+    assert (tmp_path / "clean-a11y-report.html").exists()
+
+    assert item2.status == "Failed"
+    assert item2.error_message is not None
+
+
+def test_batch_worker_cancellation(tmp_path: Path):
+    fixture_clean = FIXTURES / "clean.pptx"
+    item1 = BatchItem(path=fixture_clean)
+    worker = BatchWorker(items=[item1], out_dir=tmp_path, formats=["md"])
+    worker.request_stop()
+    worker.run()
+    # When stop requested before loop, item remains Pending
+    assert item1.status == "Pending"

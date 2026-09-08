@@ -32,3 +32,28 @@ def test_triage_dialog_flow(qtbot, tmp_path: Path):
     res2 = audit_file(deck)
     rule_ids = {f["rule_id"] for f in res2["findings"]}
     assert "image-alt-missing" not in rule_ids
+
+
+def test_triage_dialog_decorative_and_skip(qtbot, tmp_path: Path):
+    deck = tmp_path / "test_triage2.pptx"
+    prs = Presentation()
+    slide = prs.slides.add_slide(prs.slide_layouts[0])
+    shape = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(1), Inches(1), Inches(2), Inches(2))
+    shape.name = "Icon 1"
+    prs.save(str(deck))
+
+    audit_res = audit_file(deck)
+    findings = audit_res["findings"]
+
+    dialog = TriageDialog(deck, findings)
+    qtbot.addWidget(dialog)
+
+    # Test toggling decorative
+    dialog.chk_decorative.setChecked(True)
+    assert dialog.txt_input.isEnabled() is False
+    dialog.apply_current()
+
+    # Test skip
+    dialog2 = TriageDialog(deck, findings)
+    qtbot.addWidget(dialog2)
+    dialog2.skip_current()
