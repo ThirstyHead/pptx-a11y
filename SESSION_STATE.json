@@ -1,0 +1,9 @@
+{
+  "project": "pptx-a11y",
+  "active_subplan": "subplan-1-audit-engine",
+  "last_completed_task": "Subplan 0 Complete (Scaffold, Findings, Fixtures)",
+  "next_task": "Task 1.1: Base Rule and AuditContext",
+  "status": "ready-for-subplan-1",
+  "updated_at": "2026-09-08T11:45:00Z",
+  "open_blockers": []
+}
