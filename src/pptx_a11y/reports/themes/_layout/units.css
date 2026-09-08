@@ -57,3 +57,13 @@ code {
 a {
   color: var(--link);
 }
+
+.finding ol {
+  padding-left: 1.5rem;
+  margin: 0.5rem 0;
+}
+
+.finding ol li {
+  margin-bottom: 0.35rem;
+}
+

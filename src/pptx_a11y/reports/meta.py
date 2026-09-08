@@ -11,6 +11,12 @@ SC_META = {
         "1 Perceivable",
         W3C_UNDERSTANDING_BASE + "non-text-content.html",
     ),
+    "1.2.2": (
+        "Captions (Prerecorded)",
+        "A",
+        "1 Perceivable",
+        W3C_UNDERSTANDING_BASE + "captions-prerecorded.html",
+    ),
     "1.3.1": (
         "Info and Relationships",
         "A",

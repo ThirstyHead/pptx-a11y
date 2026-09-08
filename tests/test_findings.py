@@ -16,3 +16,21 @@ def test_findings_sorting_and_summary():
     assert summary["pass"] is False
     assert summary["by_severity"]["critical"] == 1
     assert summary["by_severity"]["minor"] == 1
+
+
+def test_finding_manual_guidance_fields():
+    f = Finding(
+        rule_id="test-rule",
+        sc="1.1.1",
+        severity="critical",
+        location="Slide 1",
+        description="Barrier",
+        evidence="xml",
+        fixable=False,
+        fix="Manual fix",
+        why_unfixable="Requires human context",
+        manual_steps=["Step 1", "Step 2"],
+    )
+    d = f.to_dict()
+    assert d["why_unfixable"] == "Requires human context"
+    assert d["manual_steps"] == ["Step 1", "Step 2"]

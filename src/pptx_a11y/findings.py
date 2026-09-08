@@ -1,6 +1,6 @@
 """Finding data structures, sorting, and summary metrics."""
-from dataclasses import asdict, dataclass
-from typing import Any, Dict, List, Literal
+from dataclasses import asdict, dataclass, field
+from typing import Any, Dict, List, Literal, Optional
 
 Severity = Literal["critical", "serious", "moderate", "minor"]
 SEVERITY_ORDER = {"critical": 0, "serious": 1, "moderate": 2, "minor": 3}
@@ -16,6 +16,8 @@ class Finding:
     evidence: str  # OpenXML element path or technical attribute detail
     fixable: bool  # Can this be deterministically remediated?
     fix: str  # Concrete guidance or description of remediation performed
+    why_unfixable: Optional[str] = None  # Why the software cannot safely infer authorial intent
+    manual_steps: List[str] = field(default_factory=list)  # Human-in-the-loop manual remediation instructions
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
