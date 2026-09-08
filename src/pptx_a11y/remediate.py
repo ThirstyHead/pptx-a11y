@@ -111,6 +111,12 @@ def remediate_presentation(
                             if "1 1/2 cups" in cell.text and col_idx + 1 < len(row.cells):
                                 cell.text = "1 1/2 cups"
                                 row.cells[col_idx + 1].text = "Room temperature (approx. 70°F)"
+                        if "hMerge" in tc.attrib:
+                            del tc.attrib["hMerge"]
+                        if "vMerge" in tc.attrib:
+                            del tc.attrib["vMerge"]
+                        if "rowSpan" in tc.attrib:
+                            del tc.attrib["rowSpan"]
 
             # Fix image alt text if missing
             cNvPr_nodes = shape._element.xpath(".//p:cNvPr")

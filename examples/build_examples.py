@@ -381,28 +381,6 @@ def build_test_deck(output_path: Path):
     # Barrier 1: title-missing (strip core properties title)
     prs.core_properties.title = ""
 
-    # Barrier 2: section-name-default & section-name-duplicate (MS Accessibility: Default/Duplicate section name)
-    extLst = etree.SubElement(
-        prs._element,
-        "{http://schemas.openxmlformats.org/presentationml/2006/main}extLst",
-    )
-    ext = etree.SubElement(
-        extLst,
-        "{http://schemas.openxmlformats.org/presentationml/2006/main}ext",
-        attrib={"uri": "{521415D9-36F7-43E2-AB2F-EE9909263876}"},
-    )
-    sectionLst = etree.SubElement(
-        ext,
-        "{http://schemas.microsoft.com/office/powerpoint/2010/main}sectionLst",
-        nsmap={"p14": "http://schemas.microsoft.com/office/powerpoint/2010/main"},
-    )
-    for idx, name in enumerate(["Default Section", "Default Section", "Default Section"]):
-        etree.SubElement(
-            sectionLst,
-            "{http://schemas.microsoft.com/office/powerpoint/2010/main}section",
-            attrib={"name": name, "id": f"{{default-sec-{idx}}}"},
-        )
-
     # -------------------------------------------------------------
     # Slide 1: Title Slide (with reading-order-inverted & color-contrast-insufficient)
     # -------------------------------------------------------------
@@ -413,9 +391,11 @@ def build_test_deck(output_path: Path):
 
     sub1 = slide1.placeholders[1]
     sub1.text = "No kneading required, 4 simple ingredients, baked in a Dutch Oven."
-    # Barrier 4: color-contrast-insufficient (MS Accessibility: Hard-to-read text contrast)
-    # Light slate #94A3B8 on white background gives contrast ratio 2.44:1 (< 3.0:1 / 4.5:1 required)
-    format_run(sub1.text_frame.paragraphs[0].runs[0], font_size_pt=18, bold=False, color_rgb=(0x94, 0xA3, 0xB8))
+    # Barrier 2: color-contrast-insufficient (MS Accessibility: Hard-to-read text contrast)
+    # Shaded shape with light slate #94A3B8 on white #FFFFFF background gives contrast ratio 2.44:1 (< 4.5:1 required)
+    sub1.fill.solid()
+    sub1.fill.fore_color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+    format_run(sub1.text_frame.paragraphs[0].runs[0], font_size_pt=14, bold=False, color_rgb=(0x94, 0xA3, 0xB8))
 
     # Strip language tag on Slide 1
     rPr = sub1.text_frame.paragraphs[0].runs[0]._r.find("{http://schemas.openxmlformats.org/drawingml/2006/main}rPr")
@@ -432,7 +412,7 @@ def build_test_deck(output_path: Path):
     # -------------------------------------------------------------
     slide2 = prs.slides.add_slide(prs.slide_layouts[3])
     title2 = slide2.shapes.title
-    # Barrier 6: slide-title-missing (MS Accessibility: Missing slide title)
+    # Barrier 5: slide-title-missing (MS Accessibility: Missing slide title)
     if title2:
         title2.text = ""
 
@@ -478,7 +458,8 @@ def build_test_deck(output_path: Path):
     p3.space_before = Pt(0)
     p3.space_after = Pt(0)
     remove_bullets(p3)
-    format_run(p3.runs[0], font_size_pt=13.5, color_rgb=(0x33, 0x41, 0x55))
+    # Low contrast text inside shaded card container (#94A3B8 on #F8FAFC = 2.29:1 ratio)
+    format_run(p3.runs[0], font_size_pt=13.5, color_rgb=(0x94, 0xA3, 0xB8))
 
     slide2.shapes._spTree.remove(slide2.placeholders[2]._element)
 
@@ -538,11 +519,10 @@ def build_test_deck(output_path: Path):
             cell.text = val
             format_run(cell.text_frame.paragraphs[0].runs[0], font_size_pt=13.5, bold=False, color_rgb=(0x33, 0x41, 0x55))
 
-    # Barrier 9: table-merged-cells (MS Accessibility: Use of merged or split cells)
+    # Barrier 8: table-merged-cells (MS Accessibility: Use of merged or split cells)
     cell_water = table.cell(4, 1)
+    cell_water.merge(table.cell(4, 2))
     cell_water.text = "1 1/2 cups (Room temperature, approx. 70°F)"
-    cell_water._tc.set("gridSpan", "2")
-    table.cell(4, 2).text = ""
 
     # -------------------------------------------------------------
     # Slide 4: Instructions (Step-by-Step Instructions)
@@ -685,6 +665,39 @@ def build_test_deck(output_path: Path):
                         rPr_elem = run._r.find("{http://schemas.openxmlformats.org/drawingml/2006/main}rPr")
                         if rPr_elem is not None and "lang" in rPr_elem.attrib:
                             del rPr_elem.attrib["lang"]
+
+    # Barrier: section-name-default & section-name-duplicate (MS Accessibility: Default section name & Duplicate section name)
+    P_NS = "http://schemas.openxmlformats.org/presentationml/2006/main"
+    P14_NS = "http://schemas.microsoft.com/office/powerpoint/2010/main"
+    SECTION_EXT_URI = "{521415D9-36F7-43E2-AB2F-B90AF26B5E84}"
+
+    slide_ids = [elem.get("id") for elem in prs.slides._sldIdLst]
+
+    extLst = prs._element.find(f"{{{P_NS}}}extLst")
+    if extLst is None:
+        extLst = etree.SubElement(prs._element, f"{{{P_NS}}}extLst")
+    ext = etree.SubElement(extLst, f"{{{P_NS}}}ext", attrib={"uri": SECTION_EXT_URI})
+    sectionLst = etree.SubElement(ext, f"{{{P14_NS}}}sectionLst", nsmap={"p14": P14_NS})
+
+    # Section 1: "Default Section" with slides 1-2
+    sec1 = etree.SubElement(
+        sectionLst,
+        f"{{{P14_NS}}}section",
+        attrib={"name": "Default Section", "id": "{11111111-1111-1111-1111-111111111111}"},
+    )
+    sldIdLst1 = etree.SubElement(sec1, f"{{{P14_NS}}}sldIdLst")
+    for sid in slide_ids[:2]:
+        etree.SubElement(sldIdLst1, f"{{{P14_NS}}}sldId", attrib={"id": sid})
+
+    # Section 2: "Default Section" (duplicate + default!) with slides 3-5
+    sec2 = etree.SubElement(
+        sectionLst,
+        f"{{{P14_NS}}}section",
+        attrib={"name": "Default Section", "id": "{22222222-2222-2222-2222-222222222222}"},
+    )
+    sldIdLst2 = etree.SubElement(sec2, f"{{{P14_NS}}}sldIdLst")
+    for sid in slide_ids[2:]:
+        etree.SubElement(sldIdLst2, f"{{{P14_NS}}}sldId", attrib={"id": sid})
 
     prs.save(str(output_path))
     print(f"Saved test presentation with barriers to: {output_path}")
