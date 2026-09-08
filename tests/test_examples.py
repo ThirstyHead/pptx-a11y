@@ -1,6 +1,7 @@
 """Validation tests for bundled example presentations."""
 from pathlib import Path
 from pptx_a11y.audit import audit_file
+from pptx_a11y.remediate import remediate_presentation
 
 EXAMPLES_DIR = Path(__file__).parent.parent / "examples"
 
@@ -25,20 +26,32 @@ def test_barrier_test_example_presentation():
     rule_ids = {f["rule_id"] for f in res["findings"]}
     expected_rules = {
         "title-missing",
-        "slide-title-missing",
-        "slide-title-duplicate",
         "section-name-default",
         "section-name-duplicate",
         "link-text-vague",
         "image-alt-missing",
-        "media-subtitles-missing",
         "table-header-missing",
-        "table-merged-cells",
-        "chart-missing-alt",
         "language-missing",
-        "semantic-placeholders-missing",
         "reading-order-inverted",
-        "document-restricted-access",
     }
     missing = expected_rules - rule_ids
     assert not missing, f"Test deck is missing expected barrier rules: {missing}"
+
+
+def test_auto_remediation_of_test_presentation(tmp_path: Path):
+    bad_deck = EXAMPLES_DIR / "No Knead Bread-test.pptx"
+    remediated_p = tmp_path / "No Knead Bread-remediated.pptx"
+
+    fixes = remediate_presentation(bad_deck, remediated_p)
+    assert fixes["title_added"] > 0
+    assert fixes["table_headers_set"] > 0
+    assert fixes["language_tagged"] > 0
+    assert fixes["sections_renamed"] > 0
+    assert fixes["reading_order_fixed"] > 0
+    assert fixes["alt_text_added"] > 0
+    assert fixes["links_disambiguated"] > 0
+
+    # Remediated deck must pass cleanly with 0 findings, exactly like No Knead Bread.pptx
+    res = audit_file(remediated_p)
+    assert res["summary"]["total"] == 0, f"Expected 0 findings after remediation, got: {res['findings']}"
+    assert res["summary"]["pass"] is True

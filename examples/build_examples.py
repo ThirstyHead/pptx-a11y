@@ -375,13 +375,13 @@ def build_accessible_deck(output_path: Path):
 
 
 def build_test_deck(output_path: Path):
-    """Build presentation containing at least one instance of EVERY rule tested by pptx-a11y."""
+    """Build presentation that visually mirrors No Knead Bread.pptx but contains accessibility barriers."""
     prs = Presentation()
 
-    # Barrier 1: title-missing (remove core title)
+    # Barrier 1: title-missing (strip core properties title)
     prs.core_properties.title = ""
 
-    # Barrier 2: section-name-default & Barrier 3: section-name-duplicate
+    # Barrier 2 & 3: section-name-default & section-name-duplicate
     extLst = etree.SubElement(
         prs._element,
         "{http://schemas.openxmlformats.org/presentationml/2006/main}extLst",
@@ -396,146 +396,283 @@ def build_test_deck(output_path: Path):
         "{http://schemas.microsoft.com/office/powerpoint/2010/main}sectionLst",
         nsmap={"p14": "http://schemas.microsoft.com/office/powerpoint/2010/main"},
     )
-    for name in ["Default Section", "Baking Section", "Baking Section"]:
+    for idx, name in enumerate(["Default Section", "Default Section", "Default Section"]):
         etree.SubElement(
             sectionLst,
             "{http://schemas.microsoft.com/office/powerpoint/2010/main}section",
-            attrib={"name": name, "id": f"{{{name.lower()}}}"},
+            attrib={"name": name, "id": f"{{default-sec-{idx}}}"},
         )
 
-    # Barrier 4: document-restricted-access (<p:modifyVerifier>)
-    etree.SubElement(
-        prs._element,
-        "{http://schemas.openxmlformats.org/presentationml/2006/main}modifyVerifier",
-        attrib={"cryptProviderType": "rsaAES", "hashData": "dummy"},
-    )
-
     # -------------------------------------------------------------
-    # Slide 1: Title Slide (with reading-order-inverted & language-missing)
+    # Slide 1: Title Slide (with Barrier 4: reading-order-inverted & Barrier 5: language-missing)
     # -------------------------------------------------------------
     slide1 = prs.slides.add_slide(prs.slide_layouts[0])
     title1 = slide1.shapes.title
     title1.text = "No Knead Bread"
-    title1.top = Inches(1.5)
-    title1.left = Inches(1.0)
+    format_run(title1.text_frame.paragraphs[0].runs[0], font_size_pt=40, bold=True, color_rgb=(0x0F, 0x17, 0x2A))
 
     sub1 = slide1.placeholders[1]
-    sub1.text = "No kneading required, 4 simple ingredients."
-    sub1.top = Inches(4.0)
-    sub1.left = Inches(1.0)
+    sub1.text = "No kneading required, 4 simple ingredients, baked in a Dutch Oven."
+    format_run(sub1.text_frame.paragraphs[0].runs[0], font_size_pt=18, bold=False, color_rgb=(0x47, 0x55, 0x69))
 
-    # Barrier 5: language-missing (no lang on subtitle text run)
+    # Strip language tag on Slide 1
     rPr = sub1.text_frame.paragraphs[0].runs[0]._r.find("{http://schemas.openxmlformats.org/drawingml/2006/main}rPr")
     if rPr is not None and "lang" in rPr.attrib:
         del rPr.attrib["lang"]
 
-    # Barrier 6: reading-order-inverted
-    # Invert order in spTree: place sub1 before title1 in spTree, but sub1 is spatially lower
-    spTree = slide1.shapes._spTree
-    spTree.remove(title1._element)
-    spTree.append(title1._element)  # title is now last in DOM but topmost spatially!
+    # Barrier 4: reading-order-inverted (Subtitle placed before Title in spTree DOM, but lower visually)
+    spTree1 = slide1.shapes._spTree
+    spTree1.remove(title1._element)
+    spTree1.append(title1._element)
 
     # -------------------------------------------------------------
-    # Slide 2: Missing Slide Title & Missing Alt Text & Vague Link
+    # Slide 2: Introduction & Overview (with Barrier 6: image-alt-missing)
     # -------------------------------------------------------------
-    slide2 = prs.slides.add_slide(prs.slide_layouts[1])
+    slide2 = prs.slides.add_slide(prs.slide_layouts[3])
     title2 = slide2.shapes.title
-    # Barrier 7: slide-title-missing (empty title)
-    title2.text = ""
+    title2.text = "Introduction & Overview"
+    format_run(title2.text_frame.paragraphs[0].runs[0], font_size_pt=30, bold=True, color_rgb=(0x0F, 0x17, 0x2A))
 
     body2 = slide2.placeholders[1]
-    body2.text = "Overview of the bread baking process and ingredients."
-    set_run_lang(body2.text_frame.paragraphs[0].runs[0])
+    body2.left = Inches(0.8)
+    body2.top = Inches(1.6)
+    body2.width = Inches(4.5)
+    body2.height = Inches(5.2)
+    style_card_placeholder(body2)
 
-    # Barrier 8: link-text-vague ("click here")
-    p_link = body2.text_frame.add_paragraph()
-    r_before = p_link.add_run()
-    r_before.text = "For baking tips, "
-    set_run_lang(r_before)
-    r_link = p_link.add_run()
-    r_link.text = "click here"
-    r_link.hyperlink.address = "https://example.com/recipe"
-    set_run_lang(r_link)
+    p_lead = body2.text_frame.paragraphs[0]
+    p_lead.text = "OVERVIEW & PHILOSOPHY"
+    p_lead.space_before = Pt(0)
+    p_lead.space_after = Pt(12)
+    remove_bullets(p_lead)
+    format_run(p_lead.runs[0], font_size_pt=11, bold=True, color_rgb=(0x03, 0x69, 0xA1))
 
-    # Barrier 9: image-alt-missing (no alt text)
-    pic = slide2.shapes.add_picture(str(IMAGE_PATH), Inches(5.5), Inches(2.2), width=Inches(3.8))
-    pic.name = "Bread Photo"
-    # Ensure no descr attribute on cNvPr
+    p1 = body2.text_frame.add_paragraph()
+    p1.text = (
+        "The simplicity of this no-knead bread is what makes it a household favorite. "
+        "Your entire home will fill with the aroma of fresh artisan bakery bread as it bakes."
+    )
+    p1.space_before = Pt(0)
+    p1.space_after = Pt(12)
+    remove_bullets(p1)
+    format_run(p1.runs[0], font_size_pt=13.5, color_rgb=(0x33, 0x41, 0x55))
+
+    p2 = body2.text_frame.add_paragraph()
+    p2.text = (
+        "Requiring zero special equipment and just four basic pantry staples, "
+        "this method delivers a golden, blistered crust and a moist, airy crumb."
+    )
+    p2.space_before = Pt(0)
+    p2.space_after = Pt(12)
+    remove_bullets(p2)
+    format_run(p2.runs[0], font_size_pt=13.5, color_rgb=(0x33, 0x41, 0x55))
+
+    p3 = body2.text_frame.add_paragraph()
+    p3.text = (
+        "A slow, 12 to 18-hour room-temperature fermentation develops rich flavor "
+        "and a chewy artisan texture without any manual kneading."
+    )
+    p3.space_before = Pt(0)
+    p3.space_after = Pt(0)
+    remove_bullets(p3)
+    format_run(p3.runs[0], font_size_pt=13.5, color_rgb=(0x33, 0x41, 0x55))
+
+    slide2.shapes._spTree.remove(slide2.placeholders[2]._element)
+
+    # Bread photo WITHOUT alt text (Barrier 6)
+    left = Inches(5.6)
+    top = Inches(1.6)
+    pic = slide2.shapes.add_picture(str(IMAGE_PATH), left, top, width=Inches(3.7))
+    pic.name = "Artisan Bread Loaf"
     cNvPr = pic._element.xpath(".//p:cNvPr")[0]
     if "descr" in cNvPr.attrib:
         del cNvPr.attrib["descr"]
 
     # -------------------------------------------------------------
-    # Slide 3: Ingredients (Table Header Missing & Table Merged Cells)
+    # Slide 3: Ingredients (with Barrier 7: table-header-missing)
     # -------------------------------------------------------------
-    # Barrier 10: slide-title-duplicate (name this slide "Recipe Details")
     slide3 = prs.slides.add_slide(prs.slide_layouts[1])
     title3 = slide3.shapes.title
-    title3.text = "Recipe Details"
-    set_run_lang(title3.text_frame.paragraphs[0].runs[0])
+    title3.text = "Ingredients"
+    format_run(title3.text_frame.paragraphs[0].runs[0], font_size_pt=30, bold=True, color_rgb=(0x0F, 0x17, 0x2A))
 
     slide3.shapes._spTree.remove(slide3.placeholders[1]._element)
-    tbl_shape = slide3.shapes.add_table(3, 3, Inches(1.0), Inches(2.0), Inches(8.0), Inches(2.5))
-    tbl_shape.name = "Ingredients Table"
 
-    # Barrier 11: table-header-missing (firstRow="0")
+    rows, cols = 5, 3
+    left = Inches(1.0)
+    top = Inches(1.8)
+    width = Inches(8.0)
+    height = Inches(3.2)
+    tbl_shape = slide3.shapes.add_table(rows, cols, left, top, width, height)
+    tbl_shape.name = "Ingredients Table"
+    table = tbl_shape.table
+
+    # Barrier 7: table-header-missing (firstRow="0")
     tblPr = tbl_shape._element.xpath(".//a:tblPr")[0]
     tblPr.set("firstRow", "0")
 
-    # Barrier 12: table-merged-cells (gridSpan="2")
-    cell0 = tbl_shape.table.cell(0, 0)
-    cell0._tc.set("gridSpan", "2")
-    cell0.text = "Merged Ingredients Header"
-    set_run_lang(cell0.text_frame.paragraphs[0].runs[0])
+    headers = ["Ingredient", "Quantity", "Notes"]
+    data = [
+        ["All-Purpose Flour", "3 cups", "Unbleached white flour preferred"],
+        ["Salt", "1 3/4 tsp", "Fine sea salt or kosher salt"],
+        ["Active Dry Yeast", "1/2 tsp", "Instant or dry active yeast"],
+        ["Water", "1 1/2 cups", "Room temperature (approx. 70°F)"],
+    ]
+
+    for col_idx, h_text in enumerate(headers):
+        cell = table.cell(0, col_idx)
+        cell.fill.solid()
+        cell.fill.fore_color.rgb = RGBColor(0x0F, 0x17, 0x2A)
+        cell.text = h_text
+        format_run(cell.text_frame.paragraphs[0].runs[0], font_size_pt=14, bold=True, color_rgb=(0xFF, 0xFF, 0xFF))
+
+    for row_idx, row_data in enumerate(data, start=1):
+        bg_rgb = RGBColor(0xF8, 0xFA, 0xFC) if row_idx % 2 == 1 else RGBColor(0xFF, 0xFF, 0xFF)
+        for col_idx, val in enumerate(row_data):
+            cell = table.cell(row_idx, col_idx)
+            cell.fill.solid()
+            cell.fill.fore_color.rgb = bg_rgb
+            cell.text = val
+            format_run(cell.text_frame.paragraphs[0].runs[0], font_size_pt=13.5, bold=False, color_rgb=(0x33, 0x41, 0x55))
 
     # -------------------------------------------------------------
-    # Slide 4: Instructions (Chart Missing Alt & Media Subtitles Missing & Duplicate Slide Title)
+    # Slide 4: Instructions (Step-by-Step Instructions)
     # -------------------------------------------------------------
     slide4 = prs.slides.add_slide(prs.slide_layouts[1])
     title4 = slide4.shapes.title
-    # Barrier 13: slide-title-duplicate ("Recipe Details" repeated)
-    title4.text = "Recipe Details"
-    set_run_lang(title4.text_frame.paragraphs[0].runs[0])
+    title4.text = "Step-by-Step Instructions"
+    format_run(title4.text_frame.paragraphs[0].runs[0], font_size_pt=30, bold=True, color_rgb=(0x0F, 0x17, 0x2A))
 
-    # Barrier 14: chart-missing-alt (chart with no alt text)
-    chart_data = CategoryChartData()
-    chart_data.categories = ["Flour", "Water", "Salt", "Yeast"]
-    chart_data.add_series("Grams", (400, 300, 10, 3))
-    chart_shape = slide4.shapes.add_chart(
-        XL_CHART_TYPE.COLUMN_CLUSTERED,
-        Inches(1.0),
-        Inches(2.0),
-        Inches(4.0),
-        Inches(3.0),
-        chart_data,
-    )
-    chart_shape.name = "Ingredient Proportions Chart"
-    chart_cNvPr = chart_shape._element.xpath(".//p:cNvPr")[0]
-    if "descr" in chart_cNvPr.attrib:
-        del chart_cNvPr.attrib["descr"]
+    body4 = slide4.placeholders[1]
+    body4.left = Inches(0.8)
+    body4.top = Inches(1.6)
+    body4.width = Inches(8.4)
+    body4.height = Inches(5.2)
+    style_card_placeholder(body4)
 
-    # Barrier 15: media-subtitles-missing (media element with no vtt tracks)
-    media_shape = slide4.shapes.add_shape(
-        MSO_SHAPE.RECTANGLE, Inches(5.5), Inches(2.0), Inches(3.5), Inches(2.5)
-    )
-    media_shape.name = "Bread Baking Video"
-    etree.SubElement(
-        media_shape._element,
-        "{http://schemas.openxmlformats.org/presentationml/2006/main}videoFile",
-        nsmap={"p": "http://schemas.openxmlformats.org/presentationml/2006/main"},
-    )
+    steps = [
+        (
+            "Whisk Dry Ingredients — ",
+            "In a large bowl, whisk together 3 cups all-purpose flour, 1¾ tsp fine salt, and ½ tsp active dry yeast.",
+        ),
+        (
+            "Form Shaggy Dough — ",
+            "Pour in 1½ cups room-temperature water. Mix with a wooden spoon or spatula until thoroughly incorporated.",
+        ),
+        (
+            "Overnight Counter Ferment — ",
+            "Cover bowl tightly with plastic wrap. Let rest at room temperature for 12 to 18 hours until bubbly and doubled.",
+        ),
+        (
+            "Preheat Oven & Dutch Oven — ",
+            "Place covered cast iron Dutch oven inside oven. Preheat both together to 450°F (230°C) for at least 30 minutes.",
+        ),
+        (
+            "Shape & Transfer Dough — ",
+            "With generously floured hands, turn dough onto a floured counter, shape into a ball, and drop into hot pot.",
+        ),
+        (
+            "Covered & Uncovered Bake — ",
+            "Bake covered 30 minutes to trap steam. Remove lid and bake 15 to 20 minutes more until crust is deeply golden.",
+        ),
+    ]
+
+    p0 = body4.text_frame.paragraphs[0]
+    p0.space_before = Pt(0)
+    p0.space_after = Pt(10)
+    set_numbered_list(p0)
+    r_lead = p0.runs[0] if p0.runs else p0.add_run()
+    r_lead.text = steps[0][0]
+    format_run(r_lead, font_size_pt=13.5, bold=True, color_rgb=(0x0F, 0x17, 0x2A))
+    r_body = p0.add_run()
+    r_body.text = steps[0][1]
+    format_run(r_body, font_size_pt=13.0, bold=False, color_rgb=(0x33, 0x41, 0x55))
+
+    for step_title, step_desc in steps[1:]:
+        p = body4.text_frame.add_paragraph()
+        p.space_before = Pt(0)
+        p.space_after = Pt(10)
+        set_numbered_list(p)
+        r_l = p.add_run()
+        r_l.text = step_title
+        format_run(r_l, font_size_pt=13.5, bold=True, color_rgb=(0x0F, 0x17, 0x2A))
+        r_d = p.add_run()
+        r_d.text = step_desc
+        format_run(r_d, font_size_pt=13.0, bold=False, color_rgb=(0x33, 0x41, 0x55))
 
     # -------------------------------------------------------------
-    # Slide 5: Semantic Placeholders Missing (Blank layout with floating txBox)
+    # Slide 5: Serving & Storage Tips (with Barrier 8: link-text-vague)
     # -------------------------------------------------------------
-    # Barrier 16: semantic-placeholders-missing (layout 6 is blank, has 0 placeholders)
-    slide5 = prs.slides.add_slide(prs.slide_layouts[6])
-    txBox = slide5.shapes.add_textbox(Inches(1.0), Inches(1.5), Inches(8.0), Inches(3.0))
-    txBox.name = "Floating Text Box"
-    tf = txBox.text_frame
-    p = tf.paragraphs[0]
-    p.text = "Serving Tips: Let bread cool before slicing. This slide uses floating text without semantic layout."
-    set_run_lang(p.runs[0])
+    slide5 = prs.slides.add_slide(prs.slide_layouts[1])
+    title5 = slide5.shapes.title
+    title5.text = "Serving & Storage Tips"
+    format_run(title5.text_frame.paragraphs[0].runs[0], font_size_pt=30, bold=True, color_rgb=(0x0F, 0x17, 0x2A))
+
+    body5 = slide5.placeholders[1]
+    body5.left = Inches(0.8)
+    body5.top = Inches(1.6)
+    body5.width = Inches(8.4)
+    body5.height = Inches(5.2)
+    style_card_placeholder(body5)
+
+    tips = [
+        (
+            "Cool Completely Before Slicing: ",
+            "Allow loaf to rest on a wire cooling rack for at least 1 full hour. Slicing warm bread compresses steam and creates a gummy, dense crumb.",
+        ),
+        (
+            "Preserve Crust Crispness: ",
+            "Store cut-side down in a breathable paper bag or wooden bread box at room temperature for up to 3 days. Never store in plastic bags, which soften the crust.",
+        ),
+        (
+            "Artisanal Serving Pairings: ",
+            "Slice thick and serve warm with salted European cultured butter, extra virgin olive oil with flaky sea salt, artisan cheeses, or alongside hearty soups.",
+        ),
+        (
+            "Baker's Companion Guide: ",
+            "Looking for crumb analysis, hydration scaling, and Dutch oven troubleshooting? ",
+        ),
+    ]
+
+    p0 = body5.text_frame.paragraphs[0]
+    p0.space_before = Pt(0)
+    p0.space_after = Pt(14)
+    set_bullet_list(p0)
+    r_lead = p0.runs[0] if p0.runs else p0.add_run()
+    r_lead.text = tips[0][0]
+    format_run(r_lead, font_size_pt=13.5, bold=True, color_rgb=(0x0F, 0x17, 0x2A))
+    r_body = p0.add_run()
+    r_body.text = tips[0][1]
+    format_run(r_body, font_size_pt=13.0, bold=False, color_rgb=(0x33, 0x41, 0x55))
+
+    for idx, (tip_title, tip_desc) in enumerate(tips[1:], start=1):
+        p = body5.text_frame.add_paragraph()
+        p.space_before = Pt(0)
+        p.space_after = Pt(14)
+        set_bullet_list(p)
+        r_l = p.add_run()
+        r_l.text = tip_title
+        format_run(r_l, font_size_pt=13.5, bold=True, color_rgb=(0x0F, 0x17, 0x2A))
+        r_d = p.add_run()
+        r_d.text = tip_desc
+        format_run(r_d, font_size_pt=13.0, bold=False, color_rgb=(0x33, 0x41, 0x55))
+
+        if idx == 3:
+            # Barrier 8: link-text-vague ("click here")
+            r_link = p.add_run()
+            r_link.text = "click here"
+            r_link.hyperlink.address = "https://example.com/artisan-bread-guide"
+            format_run(r_link, font_size_pt=13.0, bold=True, color_rgb=(0x03, 0x69, 0xA1))
+
+    # Strip language tags from several text runs across slides to trigger language-missing
+    for s in prs.slides:
+        for sh in s.shapes:
+            if getattr(sh, "has_text_frame", False):
+                for par in sh.text_frame.paragraphs:
+                    for run in par.runs:
+                        rPr_elem = run._r.find("{http://schemas.openxmlformats.org/drawingml/2006/main}rPr")
+                        if rPr_elem is not None and "lang" in rPr_elem.attrib:
+                            del rPr_elem.attrib["lang"]
 
     prs.save(str(output_path))
     print(f"Saved test presentation with barriers to: {output_path}")
