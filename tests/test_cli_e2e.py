@@ -50,3 +50,23 @@ def test_cli_direct_invocation(tmp_path: Path, monkeypatch):
 
     md_content = (tmp_path / "violations-a11y-report.md").read_text(encoding="utf-8")
     assert "Remediation Progress" in md_content
+
+
+def test_cli_triage_invocation(tmp_path: Path, monkeypatch):
+    args = [
+        "pptx-a11y",
+        str(FIXTURES / "violations.pptx"),
+        "--triage",
+        "--format",
+        "md,json",
+        "--output-dir",
+        str(tmp_path),
+    ]
+    monkeypatch.setattr(sys, "argv", args)
+    # Mock builtins.input to skip or answer prompts
+    monkeypatch.setattr("builtins.input", lambda prompt: "s")
+    with pytest.raises(SystemExit):
+        main()
+
+    assert (tmp_path / "violations-triaged.pptx").exists()
+    assert (tmp_path / "violations-triaged-a11y-report.md").exists()

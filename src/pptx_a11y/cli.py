@@ -8,6 +8,7 @@ from .reports.html import render_html
 from .reports.md import render_md
 from .reports.pdf import render_pdf
 from .reports.theme import available_themes
+from .triage import run_interactive_triage
 
 
 def main():
@@ -28,6 +29,7 @@ def main():
     )
     parser.add_argument("--output-dir", default=".", help="Directory to save generated reports")
     parser.add_argument("--fix", action="store_true", help="Perform deterministic remediation")
+    parser.add_argument("--triage", action="store_true", help="Launch interactive human-in-the-loop triage session")
     parser.add_argument("--out-pptx", help="Output path for remediated .pptx file")
 
     args = parser.parse_args()
@@ -39,6 +41,13 @@ def main():
     out_dir = Path(args.output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     stem = input_path.stem
+
+    # Interactive triage mode
+    if args.triage:
+        triaged_pptx = Path(args.out_pptx) if args.out_pptx else out_dir / f"{stem}-triaged.pptx"
+        run_interactive_triage(input_path, triaged_pptx)
+        input_path = triaged_pptx
+        stem = input_path.stem
 
     # 1. Audit original file
     audit_before = audit_file(input_path)
