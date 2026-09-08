@@ -39,7 +39,13 @@ class BatchWorker(QThread):
         self._stop_requested = True
 
     def run(self):
-        self.out_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            self.out_dir.mkdir(parents=True, exist_ok=True)
+        except Exception as exc:
+            self.error_occurred.emit(0, f"Cannot create output directory '{self.out_dir}': {exc}")
+            self.all_completed.emit(0, len(self.items))
+            return
+
         total = len(self.items)
         processed = 0
         errors = 0

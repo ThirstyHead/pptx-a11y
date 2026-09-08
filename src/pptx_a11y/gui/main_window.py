@@ -88,7 +88,8 @@ class MainWindow(QMainWindow):
         # Output directory selector
         out_dir_layout = QHBoxLayout()
         out_dir_layout.addWidget(QLabel("Output Directory:"))
-        default_out = Path.cwd() / "remediated_output"
+        docs_dir = Path.home() / "Documents"
+        default_out = (docs_dir if docs_dir.is_dir() else Path.home()) / "pptx-a11y-output"
         self.txt_out_dir = QLineEdit(str(default_out))
         self.btn_browse_out = QPushButton("Browse...")
         self.btn_browse_out.clicked.connect(self.browse_output_dir)
@@ -128,6 +129,7 @@ class MainWindow(QMainWindow):
         # Auto-fix checkbox
         self.chk_autofix = QCheckBox("Apply Deterministic Auto-Fixes")
         self.chk_autofix.setChecked(True)
+        self.chk_autofix.toggled.connect(self._update_start_button_text)
         options_layout.addWidget(self.chk_autofix)
 
         options_layout.addStretch()
@@ -217,11 +219,30 @@ class MainWindow(QMainWindow):
         has_items = len(self.queue.items) > 0
         self.btn_start.setEnabled(has_items)
 
+    def _update_start_button_text(self):
+        if self.chk_autofix.isChecked():
+            self.btn_start.setText("Start Remediation")
+        else:
+            self.btn_start.setText("Start Audit")
+
     def start_processing(self):
         if not self.queue.items:
             return
 
-        out_dir = Path(self.txt_out_dir.text())
+        out_dir = Path(self.txt_out_dir.text()).expanduser().resolve()
+        try:
+            out_dir.mkdir(parents=True, exist_ok=True)
+            test_file = out_dir / ".test_write"
+            test_file.touch()
+            test_file.unlink()
+        except Exception as e:
+            QMessageBox.critical(
+                self,
+                "Output Directory Error",
+                f"Cannot write to output directory:\n{out_dir}\n\nError: {e}\n\nPlease choose a writable directory.",
+            )
+            return
+
         formats = []
         if self.chk_md.isChecked():
             formats.append("md")
@@ -257,6 +278,7 @@ class MainWindow(QMainWindow):
         self.worker.item_started.connect(self._on_item_started)
         self.worker.item_progress.connect(self._on_item_progress)
         self.worker.item_finished.connect(self._on_item_finished)
+        self.worker.error_occurred.connect(self._on_error_occurred)
         self.worker.all_completed.connect(self._on_all_completed)
         self.worker.start()
 
@@ -265,6 +287,10 @@ class MainWindow(QMainWindow):
             self.worker.request_stop()
             self.lbl_status.setText("Cancelling after current file finishes...")
             self.btn_stop.setEnabled(False)
+
+    def _on_error_occurred(self, idx: int, error_msg: str):
+        self.lbl_status.setText(f"Error: {error_msg}")
+        QMessageBox.warning(self, "Processing Issue", error_msg)
 
     def _on_item_started(self, idx: int, total: int, file_name: str):
         self.lbl_status.setText(f"Processing [{idx + 1}/{total}]: {file_name}")
