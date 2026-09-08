@@ -44,18 +44,25 @@ def test_original_file_immutability_and_sha256(tmp_path: Path):
         remediate_presentation(in_file, in_file)
 
 
-def test_password_and_modify_verifier_stripped(tmp_path: Path):
-    test_deck = Path(__file__).parents[1] / "examples" / "No Knead Bread-test.pptx"
-    if not test_deck.exists():
-        return
+def test_remediation_does_not_strip_passwords_or_security(tmp_path: Path):
+    from pptx import Presentation
+    from pptx.oxml import parse_xml
 
-    out_file = tmp_path / "bread_fixed.pptx"
-    fixes = remediate_presentation(test_deck, out_file)
+    # Create a dummy deck with modifyVerifier
+    in_file = tmp_path / "protected.pptx"
+    prs = Presentation()
+    prs.slides.add_slide(prs.slide_layouts[0])
+    mv = parse_xml('<p:modifyVerifier xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" cryptProviderType="rsaAES" cryptAlgorithmClass="hash"/>')
+    prs._element.append(mv)
+    prs.save(str(in_file))
 
-    assert fixes["passwords_stripped"] >= 1
-    assert fixes["restricted_access_removed"] >= 1
+    out_file = tmp_path / "remediated.pptx"
+    fixes = remediate_presentation(in_file, out_file)
 
-    # Verify remediated deck has no modify verifier in XML
-    res = audit_file(out_file)
-    rule_ids = {f["rule_id"] for f in res["findings"]}
-    assert "document-restricted-access" not in rule_ids
+    # Remediation engine must NOT strip passwords / security verifiers
+    assert "passwords_stripped" not in fixes
+    assert "restricted_access_removed" not in fixes
+
+    prs_out = Presentation(str(out_file))
+    verifiers = prs_out._element.xpath(".//p:modifyVerifier | .//*[local-name()='modifyVerifier']")
+    assert len(verifiers) == 1

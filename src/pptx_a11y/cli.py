@@ -74,8 +74,6 @@ def main():
             sys.exit("Error: --out-pptx cannot match input presentation. pptx-a11y strictly guarantees that original files remain untouched and immutable.")
         fixes = remediate_presentation(input_path, fixed_pptx)
         print(f"[Integrity Verified] Original file preserved unchanged (SHA-256: {fixes.get('original_sha256')})")
-        if fixes.get("passwords_stripped"):
-            print(f"[Security Notice] Stripped {fixes['passwords_stripped']} modify verifier / password restriction(s) from remediated presentation.")
         print(f"Remediation saved to: {fixed_pptx}")
         print(f"Fixes applied: {fixes}")
         audit_after = audit_file(fixed_pptx)

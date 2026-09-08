@@ -40,9 +40,7 @@ def render_md(
         )
         lines.append(">")
         lines.append(
-            "> **Security & Access Policy:** All password restrictions, modify verifiers, and access locks "
-            "have been removed from the remediated presentation to guarantee full access for assistive technologies. "
-            f"The original source presentation was verified untouched and preserved byte-for-byte (SHA-256: `{result.get('sha256')}`)."
+            f"> **Integrity Guarantee:** The original source presentation was verified untouched and preserved byte-for-byte (SHA-256: `{result.get('sha256')}`)."
         )
     else:
         status_word = "clean and passes" if summary.get("pass") else "contains accessibility barriers that need attention"

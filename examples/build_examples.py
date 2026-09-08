@@ -381,19 +381,7 @@ def build_test_deck(output_path: Path):
     # Barrier 1: title-missing (strip core properties title)
     prs.core_properties.title = ""
 
-    # Barrier 2: document-restricted-access (MS Accessibility: Restricted access)
-    # Valid hash for password "password" with spinCount="100000" and SHA-512 (MS-OFFCRYPTO 2.3.7.1)
-    p_ns = "http://schemas.openxmlformats.org/presentationml/2006/main"
-    mv = etree.SubElement(prs._element, f"{{{p_ns}}}modifyVerifier")
-    mv.set("cryptProviderType", "rsaAES")
-    mv.set("cryptAlgorithmClass", "hash")
-    mv.set("cryptAlgorithmType", "typeAny")
-    mv.set("cryptAlgorithmSid", "14")
-    mv.set("spinCount", "100000")
-    mv.set("saltData", "cHB0X2ExMXlfc2FsdF8xNg==")
-    mv.set("hashData", "ESlCd9vmaTG97j2t10XTqsRqbMixHIh7TaS7p2eOLBsKmLfcZBhIhGwLHVLyTh2bpTp1h2HocF4jitvteiBXJw==")
-
-    # Barrier 3: section-name-default & section-name-duplicate (MS Accessibility: Default/Duplicate section name)
+    # Barrier 2: section-name-default & section-name-duplicate (MS Accessibility: Default/Duplicate section name)
     extLst = etree.SubElement(
         prs._element,
         "{http://schemas.openxmlformats.org/presentationml/2006/main}extLst",

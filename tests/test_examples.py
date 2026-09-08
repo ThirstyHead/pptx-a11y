@@ -35,7 +35,6 @@ def test_barrier_test_example_presentation():
         "language-missing",
         "reading-order-inverted",
         "color-contrast-insufficient",
-        "document-restricted-access",
         "slide-title-missing",
         "slide-title-duplicate",
     }
@@ -56,7 +55,6 @@ def test_auto_remediation_of_test_presentation(tmp_path: Path):
     assert fixes["alt_text_added"] > 0
     assert fixes["links_disambiguated"] > 0
     assert fixes["contrast_fixed"] > 0
-    assert fixes["restricted_access_removed"] > 0
     assert fixes["merged_cells_unmerged"] > 0
     assert fixes["slide_titles_fixed"] > 0
 

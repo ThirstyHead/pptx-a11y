@@ -37,10 +37,8 @@ def remediate_presentation(
         "alt_text_added": 0,
         "links_disambiguated": 0,
         "contrast_fixed": 0,
-        "restricted_access_removed": 0,
         "merged_cells_unmerged": 0,
         "slide_titles_fixed": 0,
-        "passwords_stripped": 0,
         "original_sha256": sha256_before,
         "original_file_immutable": True,
     }
@@ -62,16 +60,7 @@ def remediate_presentation(
         prs.core_properties.title = inferred_title
         fixes["title_added"] += 1
 
-    # 2. Remediate restricted access (<p:modifyVerifier>) & strip passwords
-    verifiers = prs._element.xpath(".//p:modifyVerifier | .//*[local-name()='modifyVerifier']")
-    for v in verifiers:
-        parent = v.getparent()
-        if parent is not None:
-            parent.remove(v)
-            fixes["restricted_access_removed"] = fixes.get("restricted_access_removed", 0) + 1
-            fixes["passwords_stripped"] = fixes.get("passwords_stripped", 0) + 1
-
-    # 3. Remediate slide titles (missing or duplicate)
+    # 2. Remediate slide titles (missing or duplicate)
     seen_titles = {}
     for s_idx, slide in enumerate(prs.slides, start=1):
         if slide.shapes.title:
