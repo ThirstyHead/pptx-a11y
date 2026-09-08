@@ -310,6 +310,57 @@ class TableHeaderRule(Rule):
         return findings
 
 
+@register_rule
+class TableMergedCellsRule(Rule):
+    rule_id = "table-merged-cells"
+    sc = "1.3.1"
+    severity = "serious"
+    title = "Table Contains Merged or Split Cells"
+
+    def check(self, prs: Presentation, ctx: AuditContext) -> List[Finding]:
+        findings = []
+        for s_idx, slide in enumerate(prs.slides, start=1):
+            for shape in slide.shapes:
+                if shape.has_table:
+                    tbl = getattr(shape, "table", None)
+                    if not tbl:
+                        continue
+                    has_merged = False
+                    for row in tbl.rows:
+                        for cell in row.cells:
+                            tc = cell._tc
+                            if (
+                                int(tc.get("gridSpan", "1")) > 1
+                                or int(tc.get("rowSpan", "1")) > 1
+                                or tc.get("hMerge") in ("1", "true")
+                                or tc.get("vMerge") in ("1", "true")
+                            ):
+                                has_merged = True
+                                break
+                        if has_merged:
+                            break
+
+                    if has_merged:
+                        findings.append(Finding(
+                            rule_id=self.rule_id,
+                            sc=self.sc,
+                            severity=self.severity,
+                            location=f"Slide {s_idx}, Table '{shape.name}'",
+                            description=f"Table '{shape.name}' on Slide {s_idx} contains merged or split cells.",
+                            evidence=f"Table '{shape.name}' has cells with gridSpan > 1, rowSpan > 1, or hMerge/vMerge attributes",
+                            fixable=False,
+                            fix="Avoid merged cells in presentation tables; unmerge and split complex tables into simple uniform grids.",
+                            why_unfixable="Automated unmerging could scramble tabular relationships and misalign data columns.",
+                            manual_steps=[
+                                f"Select table '{shape.name}' on Slide {s_idx}.",
+                                "Go to 'Table Design' / 'Layout' on the PowerPoint ribbon.",
+                                "Use 'Split Cells' to restore a regular grid where every data cell maps to exactly one column and row header.",
+                                "If the table presents multiple distinct datasets, split it into two separate, simpler tables each with its own header row.",
+                            ],
+                        ))
+        return findings
+
+
 # ---------------------------------------------------------------------------
 # Principle 3: Understandable
 # ---------------------------------------------------------------------------
