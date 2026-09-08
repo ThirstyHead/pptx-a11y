@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pptx-a11y"
+version = "0.1.0"
+description = "Audit and remediate PowerPoint .pptx presentations against WCAG 2.2 AA (headless, deterministic)"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "pptx-a11y contributors" }]
+keywords = ["accessibility", "wcag", "wcag22", "powerpoint", "pptx", "presentationml", "audit", "remediation"]
+dependencies = [
+    "python-pptx>=1.0.0",
+    "lxml>=4.9",
+    "wcag-contrast-ratio>=0.9,<1",
+    "markdown>=3.6,<4",
+    "pymupdf>=1.24",
+    "pikepdf>=9.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+]
+gui = [
+    "PySide6>=6.5",
+]
+
+[project.scripts]
+pptx-a11y = "pptx_a11y.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+pptx_a11y = [
+    "sc_cache.json",
+    "reports/themes/**/*.css",
+    "reports/themes/**/*.json",
+    "reports/themes/**/*.md",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
