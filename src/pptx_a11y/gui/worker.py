@@ -63,10 +63,19 @@ class BatchWorker(QThread):
                 self.item_progress.emit(idx, "Auditing presentation...")
                 audit_before = audit_file(item.path)
                 item.findings_count = len(audit_before.get("findings", []))
-                item.critical_count = sum(
-                    1 for f in audit_before.get("findings", []) if f.get("severity") == "critical"
-                )
-                item.score = audit_before.get("summary", {}).get("score", 0.0)
+                by_sev = audit_before.get("summary", {}).get("by_severity", {})
+                item.critical_count = by_sev.get("critical", 0)
+
+                if item.findings_count == 0:
+                    item.score = 100.0
+                else:
+                    penalties = (
+                        item.critical_count * 20.0
+                        + by_sev.get("serious", 0) * 10.0
+                        + by_sev.get("moderate", 0) * 5.0
+                        + by_sev.get("minor", 0) * 2.0
+                    )
+                    item.score = max(0.0, round(100.0 - penalties, 1))
 
                 # 3. Optional auto-fix
                 audit_after = None
