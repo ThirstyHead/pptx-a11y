@@ -211,6 +211,70 @@ class VisualAltTextRule(Rule):
                         evidence=f"<p:cNvPr id='{shape.shape_id}' name='{shape.name}'> has no descr attribute and no adec:decorative tag",
                         fixable=False,
                         fix="Provide concise, meaningful alternative text describing the image's content or mark it as decorative.",
+                        why_unfixable="Automated tools cannot guess visual content or context without human authorial intent.",
+                        manual_steps=[
+                            f"Select '{shape.name}' on Slide {s_idx}.",
+                            "Right-click and select 'View Alt Text' (or navigate to Picture Format -> Alt Text).",
+                            "Enter a concise 1-2 sentence description conveying the essential information.",
+                            "If the asset is purely visual fluff, check 'Mark as decorative'.",
+                        ],
+                    ))
+        return findings
+
+
+@register_rule
+class MediaSubtitlesRule(Rule):
+    rule_id = "media-subtitles-missing"
+    sc = "1.2.2"
+    severity = "critical"
+    title = "Audio / Video Missing Subtitles or Captions"
+
+    def check(self, prs: Presentation, ctx: AuditContext) -> List[Finding]:
+        findings = []
+        for s_idx, slide in enumerate(prs.slides, start=1):
+            for shape in slide.shapes:
+                is_media = False
+                if shape.shape_type == MSO_SHAPE_TYPE.MEDIA:
+                    is_media = True
+                else:
+                    # Inspect oxml for embedded media references
+                    media_tags = shape._element.xpath(
+                        ".//a:videoFile | .//p:videoFile | .//a:quickTimeFile | .//p:quickTimeFile | .//p:media | .//a:audioFile"
+                    )
+                    if media_tags:
+                        is_media = True
+
+                if not is_media:
+                    continue
+
+                # Check if closed captions or timed text track is attached
+                has_captions = False
+                caption_elems = shape._element.xpath(".//p:custDataLst | .//a:extLst")
+                for elem in caption_elems:
+                    for sub in elem.iter():
+                        if "vtt" in (sub.get("val", "") + sub.get("href", "")).lower():
+                            has_captions = True
+                            break
+                    if has_captions:
+                        break
+
+                if not has_captions:
+                    findings.append(Finding(
+                        rule_id=self.rule_id,
+                        sc=self.sc,
+                        severity=self.severity,
+                        location=f"Slide {s_idx}, Media '{shape.name}'",
+                        description=f"Audio or video element '{shape.name}' on Slide {s_idx} does not have synchronized closed captions or subtitles.",
+                        evidence=f"Shape '{shape.name}' contains media stream with 0 attached timed text/WebVTT caption tracks",
+                        fixable=False,
+                        fix="Attach a synchronized WebVTT (.vtt) caption track or provide a complete verbatim text transcript in speaker notes.",
+                        why_unfixable="Software cannot reliably transcribe spoken dialogue or synchronize timestamps without human verification.",
+                        manual_steps=[
+                            f"Select media player '{shape.name}' on Slide {s_idx}.",
+                            "On the PowerPoint ribbon, select the 'Playback' tab.",
+                            "Click 'Insert Captions' and select your WebVTT (.vtt) subtitles file.",
+                            "Alternatively, type or paste the complete spoken transcript into the slide's Speaker Notes.",
+                        ],
                     ))
         return findings
 
