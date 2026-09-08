@@ -2,10 +2,10 @@
   "project": "pptx-a11y",
   "version": "0.4.0",
   "active_subplan": "v0.4.0-release-prep",
-  "last_completed_task": "Restructure examples directory, move developer scripts, and prepare v0.4.0 release",
-  "next_task": "Create PR for v0.4.0 release",
+  "last_completed_task": "Tag v0.4.0 and publish GitHub release",
+  "next_task": "None - v0.4.0 published",
   "status": "completed",
-  "updated_at": "2026-09-08T15:30:00Z",
+  "updated_at": "2026-09-08T22:46:00Z",
   "test_summary": {
     "total_tests": 44,
     "passed": 44,
