@@ -2,6 +2,12 @@
 import argparse
 import sys
 from pathlib import Path
+from engine_a11y.criteria_config import (
+    apply_criteria_config,
+    generate_criteria_template,
+    load_criteria_config,
+)
+from engine_a11y.findings import summarize
 from .audit import audit_file, audit_result_to_json
 from .remediate import remediate_presentation
 from .reports.html import render_html
@@ -11,7 +17,7 @@ from .reports.theme import available_themes
 from .triage import run_interactive_triage
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(
         prog="pptx-a11y",
         description="Audit and remediate PowerPoint presentations against WCAG 2.2 AA standards.",
@@ -32,8 +38,24 @@ def main():
     parser.add_argument("--fix", action="store_true", help="Perform deterministic remediation")
     parser.add_argument("--triage", action="store_true", help="Launch interactive human-in-the-loop triage session")
     parser.add_argument("--out-pptx", help="Output path for remediated .pptx file")
+    parser.add_argument(
+        "--criteria",
+        help="Path to criteria configuration checklist ([x]/[ ]) or YAML for what-if testing",
+    )
+    parser.add_argument(
+        "--init-criteria",
+        nargs="?",
+        const="a11y-criteria.txt",
+        help="Generate default criteria checklist file ([x]/[ ]) and exit",
+    )
 
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
+
+    if args.init_criteria:
+        out_criteria = Path(args.init_criteria)
+        generate_criteria_template(out_criteria)
+        print(f"Generated criteria checklist at: {out_criteria}")
+        sys.exit(0)
 
     if args.gui:
         try:
@@ -45,7 +67,7 @@ def main():
             sys.exit(1)
 
     if not args.file:
-        parser.error("the following arguments are required: file (or specify --gui)")
+        parser.error("the following arguments are required: file (or specify --gui, --init-criteria)")
 
     input_path = Path(args.file)
     if not input_path.exists():
@@ -67,6 +89,16 @@ def main():
     audit_before = audit_file(input_path)
     audit_after = None
 
+    excluded_sc = set()
+    if args.criteria:
+        criteria_path = Path(args.criteria)
+        if not criteria_path.exists():
+            print(f"Error: Criteria config '{criteria_path}' not found.", file=sys.stderr)
+            sys.exit(1)
+        _, excluded_sc = load_criteria_config(criteria_path)
+        apply_criteria_config(audit_before.get("findings", []), excluded_sc)
+        audit_before["summary"] = summarize(audit_before.get("findings", []))
+
     # 2. Remediate if requested
     if args.fix:
         fixed_pptx = Path(args.out_pptx) if args.out_pptx else out_dir / f"{stem}-remediated.pptx"
@@ -77,10 +109,18 @@ def main():
         print(f"Remediation saved to: {fixed_pptx}")
         print(f"Fixes applied: {fixes}")
         audit_after = audit_file(fixed_pptx)
+        if excluded_sc:
+            apply_criteria_config(audit_after.get("findings", []), excluded_sc)
+            audit_after["summary"] = summarize(audit_after.get("findings", []))
 
     # 3. Render canonical Markdown report (Source of Truth)
     formats = [f.strip().lower() for f in args.format.split(",")]
-    md_text = render_md(audit_before, after_result=audit_after, source_path=str(input_path))
+    md_text = render_md(
+        audit_before,
+        after_result=audit_after,
+        source_path=str(input_path),
+        excluded_sc=excluded_sc,
+    )
 
     if "md" in formats:
         md_file = out_dir / f"{stem}-a11y-report.md"
@@ -106,7 +146,7 @@ def main():
 
     # Exit code reflects compliance status (0 = compliant, 1 = action required)
     final_summary = (audit_after or audit_before)["summary"]
-    sys.exit(0 if final_summary["pass"] else 1)
+    sys.exit(0 if final_summary.get("pass", False) else 1)
 
 
 if __name__ == "__main__":
