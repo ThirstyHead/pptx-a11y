@@ -3,4 +3,4 @@ import pptx_a11y
 
 
 def test_version():
-    assert pptx_a11y.__version__ == "0.4.0"
+    assert pptx_a11y.__version__ == "0.5.0"
