@@ -12,7 +12,7 @@ license = { text = "MIT" }
 authors = [{ name = "pptx-a11y contributors" }]
 keywords = ["accessibility", "wcag", "wcag22", "powerpoint", "pptx", "presentationml", "audit", "remediation"]
 dependencies = [
-    "engine-a11y @ git+https://github.com/ThirstyHead/engine-a11y.git@v0.1.0",
+    "engine-a11y @ git+https://github.com/ThirstyHead/engine-a11y.git@v0.2.1",
     "python-pptx>=1.0.0",
     "lxml>=4.9",
     "wcag-contrast-ratio>=0.9,<1",
